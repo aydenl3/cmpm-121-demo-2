@@ -42,6 +42,11 @@ h1 {
   text-align: center;
 }
 
+#canvas {
+    border: 3px solid black;
+    border-radius: 10% 40% / 10% 10%;
+  }
+
 .logo {
   height: 6em;
   padding: 1.5em;

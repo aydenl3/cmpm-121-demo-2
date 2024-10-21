@@ -27,22 +27,54 @@ clearCanvas(pen);
 //Drawing Logic
     //Variables
 let isDrawing: boolean = false;
-let x = 0;
-let y = 0;
+let x: number = 0;
+let y: number = 0;
+let numLines: number = 0;
+
+interface Point {
+    x: number;
+    y: number;
+}
+const pointLog: Point[][] = [];
+let line1: Point[] = [];
+pointLog.push(line1);
     //Mouse Down
 canvas.addEventListener("mousedown", (e) => {
     x = e.offsetX;
     y = e.offsetY;
-    isDrawing = true;
+    isDrawing = true;   
   });
     //Move Mouse
 canvas.addEventListener("mousemove", (e) => {
     if (isDrawing) {
-      drawLine(pen, x, y, e.offsetX, e.offsetY);
+      //drawLine(pen, x, y, e.offsetX, e.offsetY);
       x = e.offsetX;
       y = e.offsetY;
+      const newpoint: Point = {x:x,y:y,};
+      pointLog[numLines].push(newpoint);
+      const event = new CustomEvent('canvasDrawn', {
+        detail: { x,y}
+    });
+    canvas.dispatchEvent(event);
     }   
   });
+//Canvas listener
+canvas.addEventListener('canvasDrawn', (e) => {
+    //console.log("Drawn at:", e.detail);
+    clearCanvas(pen);
+    for(let i = 0; i <= numLines; i++){
+        for(let j = 0; j < pointLog[i].length-1; j++){
+            //console.log(i);
+            //if(j != pointLog[i].length-1){
+                //console.log(j);
+                const thispoint = pointLog[i][j];
+                const nextpoint = pointLog[i][j+1];
+                drawLine(pen,thispoint.x,thispoint.y,nextpoint.x,nextpoint.y);
+            //}
+        }
+    }
+    
+});
   //Mouse Up
 document.addEventListener("mouseup", (e) => {
     if (isDrawing) {
@@ -50,6 +82,9 @@ document.addEventListener("mouseup", (e) => {
       x = 0;
       y = 0;
       isDrawing = false;
+      let line: Point[] = []
+      pointLog.push(line);
+      numLines++;
     }
   });
   

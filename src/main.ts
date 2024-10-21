@@ -12,100 +12,106 @@ const header = document.createElement("h1");
 header.innerHTML = gameName;
 app.append(header);
 
-
 // Create Canvas
 const Canvas_SizeX: number = 256;
 const Canvas_SizeY: number = 256;
-const canvas = document.getElementById("canvas") as HTMLElement | null;
-if(!canvas){
-    console.log("No canvas element found");
-}
-else{
-// @ts-ignore: keep getting error "getContext does not exist on type HTML, when it works fine"
-const pen = canvas.getContext("2d");
-clearCanvas(pen);
 //Drawing Logic
-    //Variables
+interface Point {
+  x: number;
+  y: number;
+}
+const pointLog: Point[][] = [];
+const line1: Point[] = [];
+pointLog.push(line1);
+//Variables
 let isDrawing: boolean = false;
 let x: number = 0;
 let y: number = 0;
 let numLines: number = 0;
 
-interface Point {
-    x: number;
-    y: number;
-}
-const pointLog: Point[][] = [];
-let line1: Point[] = [];
-pointLog.push(line1);
-    //Mouse Down
-canvas.addEventListener("mousedown", (e) => {
+const canvas = document.getElementById("canvas") as HTMLElement | null;
+if (!canvas) {
+  console.log("No canvas element found");
+} else {
+  // @ts-ignore: keep getting error "getContext does not exist on type HTML, when it works fine"
+  const pen = canvas.getContext("2d");
+  // Reset canvas
+  clearCanvas(pen);
+
+  //Mouse Down
+  canvas.addEventListener("mousedown", (e) => {
     x = e.offsetX;
     y = e.offsetY;
-    isDrawing = true;   
+    isDrawing = true;
   });
-    //Move Mouse
-canvas.addEventListener("mousemove", (e) => {
+  //Move Mouse
+  canvas.addEventListener("mousemove", (e) => {
     if (isDrawing) {
-      //drawLine(pen, x, y, e.offsetX, e.offsetY);
       x = e.offsetX;
       y = e.offsetY;
-      const newpoint: Point = {x:x,y:y,};
+      const newpoint: Point = { x: x, y: y };
       pointLog[numLines].push(newpoint);
-      const event = new CustomEvent('canvasDrawn', {
-        detail: { x,y}
-    });
-    canvas.dispatchEvent(event);
-    }   
-  });
-//Canvas listener
-canvas.addEventListener('canvasDrawn', (e) => {
-    //console.log("Drawn at:", e.detail);
-    clearCanvas(pen);
-    for(let i = 0; i <= numLines; i++){
-        for(let j = 0; j < pointLog[i].length-1; j++){
-            //console.log(i);
-            //if(j != pointLog[i].length-1){
-                //console.log(j);
-                const thispoint = pointLog[i][j];
-                const nextpoint = pointLog[i][j+1];
-                drawLine(pen,thispoint.x,thispoint.y,nextpoint.x,nextpoint.y);
-            //}
-        }
+      const event = new CustomEvent("canvasDrawn", {
+        detail: { x, y },
+      });
+      canvas.dispatchEvent(event);
     }
-    
-});
+  });
+  //Canvas listener
+  canvas.addEventListener("canvasDrawn", () => {
+    clearCanvas(pen);
+    for (let i = 0; i <= numLines; i++) {
+      for (let j = 0; j < pointLog[i].length - 1; j++) {
+        const thispoint = pointLog[i][j];
+        const nextpoint = pointLog[i][j + 1];
+        drawLine(pen, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
+      }
+    }
+  });
   //Mouse Up
-document.addEventListener("mouseup", (e) => {
+  document.addEventListener("mouseup", (e) => {
     if (isDrawing) {
       drawLine(pen, x, y, e.offsetX, e.offsetY);
       x = 0;
       y = 0;
       isDrawing = false;
-      let line: Point[] = []
-      pointLog.push(line);
+      const newline: Point[] = [];
+      pointLog.push(newline);
       numLines++;
     }
   });
-  
-//Create Clear Button
-const Clear_Button = document.createElement("button");
-Clear_Button.textContent = "Clear Canvas";
-app.append(Clear_Button);
-Clear_Button.addEventListener("click", () => clearCanvas(pen));
+
+  //Create Clear Button
+  const Clear_Button = document.createElement("button");
+  Clear_Button.textContent = "Clear Canvas";
+  app.append(Clear_Button);
+  Clear_Button.addEventListener("click", () => formatCanvas(pen));
 }
-    //Draw line
-function drawLine(context:CanvasRenderingContext2D, x1:number, y1:number, x2:number, y2:number) {
-    context.beginPath();
-    context.strokeStyle = "black";
-    context.lineWidth = 1;
-    context.moveTo(x1, y1);
-    context.lineTo(x2, y2);
-    context.stroke();
-    context.closePath();
-  }
-function clearCanvas(context:CanvasRenderingContext2D){
-    context.clearRect(0,0,Canvas_SizeX,Canvas_SizeY);
-    context.fillStyle = "cornsilk";
-    context.fillRect(0, 0, Canvas_SizeX, Canvas_SizeY);
+//Draw line
+function drawLine(
+  context: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+) {
+  context.beginPath();
+  context.strokeStyle = "black";
+  context.lineWidth = 1;
+  context.moveTo(x1, y1);
+  context.lineTo(x2, y2);
+  context.stroke();
+  context.closePath();
+}
+function clearCanvas(context: CanvasRenderingContext2D) {
+  context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
+  context.fillStyle = "cornsilk";
+  context.fillRect(0, 0, Canvas_SizeX, Canvas_SizeY);
+}
+function formatCanvas(context: CanvasRenderingContext2D) {
+  clearCanvas(context);
+  pointLog.length = 0;
+  const newline: Point[] = [];
+  pointLog.push(newline);
+  numLines = 0;
 }

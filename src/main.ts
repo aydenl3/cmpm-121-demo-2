@@ -23,6 +23,9 @@ interface Point {
 const pointLog: Point[][] = [];
 const line1: Point[] = [];
 pointLog.push(line1);
+
+const undoLog: Point[][] = [];
+const drawEvent = new CustomEvent("canvasDrawn", {});
 //Variables
 let isDrawing: boolean = false;
 let x: number = 0;
@@ -43,6 +46,9 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
+    const newline: Point[] = [];
+    pointLog.push(newline);
+    numLines++;
   });
   //Move Mouse
   canvas.addEventListener("mousemove", (e) => {
@@ -50,21 +56,28 @@ if (!canvas) {
       x = e.offsetX;
       y = e.offsetY;
       const newpoint: Point = { x: x, y: y };
+      if (!pointLog.length) {
+        const newline: Point[] = [];
+        pointLog.push(newline);
+      }
       pointLog[numLines].push(newpoint);
-      const event = new CustomEvent("canvasDrawn", {
-        detail: { x, y },
-      });
-      canvas.dispatchEvent(event);
+      canvas.dispatchEvent(drawEvent);
     }
   });
-  //Canvas listener
+  //Draw Event Listener
   canvas.addEventListener("canvasDrawn", () => {
     clearCanvas(pen);
-    for (let i = 0; i <= numLines; i++) {
-      for (let j = 0; j < pointLog[i].length - 1; j++) {
-        const thispoint = pointLog[i][j];
-        const nextpoint = pointLog[i][j + 1];
-        drawLine(pen, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
+    if (pointLog.length > 0) {
+      for (const line of pointLog) {
+        if (line.length > 0) {
+          for (let j = 0; j < line.length - 1; j++) {
+            const thispoint = line[j];
+            const nextpoint = line[j + 1];
+            drawLine(pen, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
+          }
+        } else {
+          //console.log("inner list length 0");
+        }
       }
     }
   });
@@ -75,9 +88,6 @@ if (!canvas) {
       x = 0;
       y = 0;
       isDrawing = false;
-      const newline: Point[] = [];
-      pointLog.push(newline);
-      numLines++;
     }
   });
 
@@ -86,7 +96,20 @@ if (!canvas) {
   Clear_Button.textContent = "Clear Canvas";
   app.append(Clear_Button);
   Clear_Button.addEventListener("click", () => formatCanvas(pen));
-}
+
+  //Create Undo Button
+  const Undo_Button = document.createElement("button");
+  Undo_Button.textContent = "Undu";
+  app.append(Undo_Button);
+  Undo_Button.addEventListener("click", () => undoLine(pen));
+  
+  //Create Redo Button
+  const Redo_Button = document.createElement("button");
+  Redo_Button.textContent = "Redu";
+  app.append(Redo_Button);
+  Redo_Button.addEventListener("click", () => RedoLine(pen));
+  }
+
 //Draw line
 function drawLine(
   context: CanvasRenderingContext2D,
@@ -114,4 +137,53 @@ function formatCanvas(context: CanvasRenderingContext2D) {
   const newline: Point[] = [];
   pointLog.push(newline);
   numLines = 0;
+  x = 0;
+  y = 0;
+}
+function undoLine(context: CanvasRenderingContext2D) {
+  if (canvas) {
+    if (pointLog.length > 0) {
+      const removed_line = pointLog.pop();
+      if(removed_line){
+        if(removed_line.length == 0){
+          undoLine(context);
+        }
+        undoLog.push(removed_line);
+        numLines--;
+        canvas.dispatchEvent(drawEvent);
+        console.log(removed_line);
+        return removed_line;
+        
+      }
+      else{
+        console.log("Err Undo: removed_line does not exist");
+      }
+
+  } else {
+    console.log("Err Undo: removed line does not exist");
+  }
+}
+}
+function RedoLine(context: CanvasRenderingContext2D) {
+  if (canvas) {
+    //if (undoLog.length > 1) {
+      const removed_line = undoLog.pop();
+      if (removed_line){
+        if(removed_line.length > 0){
+          pointLog.push(removed_line);
+          numLines++;
+          canvas.dispatchEvent(drawEvent);
+          console.log(removed_line);
+          return removed_line;
+        }
+        else{
+          console.log("Err Redo: removed_line is empty")
+        }
+      }
+      else{
+        console.log("Err Redo: removed_line does not exist")
+      }
+  } else {
+    console.log("No Canvas Found");
+  }
 }

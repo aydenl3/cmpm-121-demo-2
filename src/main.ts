@@ -29,6 +29,7 @@ let isDrawing: boolean = false;
 let x: number = 0;
 let y: number = 0;
 let numLines: number = 0;
+let current_thickness: number = 1;
 
 interface canvasElement {
   display(context: CanvasRenderingContext2D): void;
@@ -36,7 +37,7 @@ interface canvasElement {
 
 class Line implements canvasElement {
   private points: Point[] = [];
-
+  private thickness: number = 1;
   constructor(initialX: number, initialY: number) {
     this.points.push({ x: initialX, y: initialY });
   }
@@ -50,7 +51,7 @@ class Line implements canvasElement {
       for (let i = 0; i < this.points.length - 1; i++) {
         const thispoint = this.points[i];
         const nextpoint = this.points[i + 1];
-        drawLine(context, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
+        drawLine(context, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y,this.thickness);
       }
     }
   }
@@ -73,6 +74,10 @@ class Line implements canvasElement {
       return false;
     }
   }
+  
+  changeThickness(thickness:number): void {
+    this.thickness = thickness;
+  }
 }
 
 interface Command {
@@ -90,9 +95,20 @@ class DisplayLineCommand implements Command {
   }
 }
 
+class ChangeLineThicknessCommand implements Command {
+    private line: Line;
+    private thickness: number;
+    constructor(line: Line,thickness:number){
+      this.line = line;
+      this.thickness = thickness;
+    }
+    execute(): void {
+      this.line.changeThickness(this.thickness);
+    }
+}
 //----------------------------------------------------------------------
 
-addLine(pointLog, -1, -1);
+addLine(pointLog, -1, -1,current_thickness);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
@@ -108,7 +124,7 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
-    addLine(pointLog, x, y);
+    addLine(pointLog, x, y,current_thickness);
     numLines++;
   });
   //Move Mouse
@@ -117,7 +133,7 @@ if (!canvas) {
       x = e.offsetX;
       y = e.offsetY;
       if (!pointLog.length) {
-        addLine(pointLog, x, y);
+        addLine(pointLog, x, y,current_thickness);
       }
       pointLog[numLines].addPoint(x, y);
       canvas.dispatchEvent(drawEvent);
@@ -159,6 +175,19 @@ if (!canvas) {
   Redo_Button.textContent = "Redu";
   app.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine(pen));
+
+  //Create Thick Button
+  const Thick_Button = document.createElement("button");
+  Thick_Button.textContent = "Thik";
+  app.append(Thick_Button);
+  Thick_Button.addEventListener("click", () => ChangeThickness(pen,3));
+  
+  //Create Thin Button
+  const Thin_Button = document.createElement("button");
+  Thin_Button.textContent = "Thyn";
+  app.append(Thin_Button);
+  Thin_Button.addEventListener("click", () => ChangeThickness(pen,1));
+    
 }
 
 //Draw line
@@ -167,11 +196,12 @@ function drawLine(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
+  width: number
 ) {
   context.beginPath();
   context.strokeStyle = "black";
-  context.lineWidth = 1;
+  context.lineWidth = width;
   context.moveTo(x1, y1);
   context.lineTo(x2, y2);
   context.stroke();
@@ -185,7 +215,8 @@ function clearCanvas(context: CanvasRenderingContext2D) {
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
-  addLine(pointLog, x, y);
+  undoLog.length = 0;
+  addLine(pointLog, x, y, current_thickness);
   numLines = 0;
   x = 0;
   y = 0;
@@ -227,7 +258,12 @@ function RedoLine(context: CanvasRenderingContext2D) {
     }
   }
 }
-function addLine(log: Line[], x: number, y: number) {
+function addLine(log: Line[], x: number, y: number, thickness: number) {
   const line1 = new Line(x, y);
+  const thicknessCommand = new ChangeLineThicknessCommand(line1,thickness);
+  thicknessCommand.execute();
   log.push(line1);
+}
+function ChangeThickness(context: CanvasRenderingContext2D,thickness:number) {
+  current_thickness = thickness;
 }

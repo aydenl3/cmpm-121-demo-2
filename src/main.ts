@@ -22,7 +22,6 @@ interface Point {
 }
 const pointLog: Line[] = [];
 
-
 const undoLog: Line[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
 //Variables
@@ -31,13 +30,11 @@ let x: number = 0;
 let y: number = 0;
 let numLines: number = 0;
 
-
-
-interface canvasElement{
-  display(context:CanvasRenderingContext2D):void;
+interface canvasElement {
+  display(context: CanvasRenderingContext2D): void;
 }
 
-class Line implements canvasElement{
+class Line implements canvasElement {
   private points: Point[] = [];
 
   constructor(initialX: number, initialY: number) {
@@ -45,53 +42,48 @@ class Line implements canvasElement{
   }
 
   addPoint(x_in: number, y_in: number) {
-    this.points.push({ x:x_in, y:y_in });
+    this.points.push({ x: x_in, y: y_in });
   }
 
   display(context: CanvasRenderingContext2D): void {
-    console.log(context);
     if (this.points.length > 0) {
       for (let i = 0; i < this.points.length - 1; i++) {
         const thispoint = this.points[i];
         const nextpoint = this.points[i + 1];
         drawLine(context, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
       }
-    } else {
-      //console.log("inner list length 0");
     }
   }
 
-  removePoint():Point{
+  removePoint(): Point {
     const point = this.points.pop();
-    if(point){
+    if (point) {
       return point;
-    }
-    else{
+    } else {
       console.log("ERR REMOVE POINT: NO POINT FOUND");
-      const throwaway: Point = {x:9999, y:9999};
+      const throwaway: Point = { x: 9999, y: 9999 };
       return throwaway;
     }
   }
 
-  is_empty():boolean{
-    if(this.points.length == 0){
+  is_empty(): boolean {
+    if (this.points.length == 0) {
       return true;
-    }
-    else{
-      return(false);
+    } else {
+      return false;
     }
   }
 }
 
-interface Command{
-  execute():void;
+interface Command {
+  execute(): void;
 }
-class DisplayLineCommand implements Command{
-   private line: Line;
-   private context: CanvasRenderingContext2D;
+class DisplayLineCommand implements Command {
+  private line: Line;
+  private context: CanvasRenderingContext2D;
   constructor(line: Line, context: CanvasRenderingContext2D) {
     this.line = line;
-    this.context = context;    
+    this.context = context;
   }
   execute(): void {
     this.line.display(this.context);
@@ -100,7 +92,7 @@ class DisplayLineCommand implements Command{
 
 //----------------------------------------------------------------------
 
-addLine(pointLog,-1,-1);
+addLine(pointLog, -1, -1);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
@@ -116,7 +108,7 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
-    addLine(pointLog,x,y);
+    addLine(pointLog, x, y);
     numLines++;
   });
   //Move Mouse
@@ -125,9 +117,9 @@ if (!canvas) {
       x = e.offsetX;
       y = e.offsetY;
       if (!pointLog.length) {
-        addLine(pointLog,x,y);
+        addLine(pointLog, x, y);
       }
-      pointLog[numLines].addPoint(x,y);
+      pointLog[numLines].addPoint(x, y);
       canvas.dispatchEvent(drawEvent);
     }
   });
@@ -136,7 +128,7 @@ if (!canvas) {
     clearCanvas(pen);
     if (pointLog.length > 0) {
       for (const line of pointLog) {
-        const drawCommand = new DisplayLineCommand(line,pen);
+        const drawCommand = new DisplayLineCommand(line, pen);
         drawCommand.execute();
       }
     }
@@ -144,7 +136,6 @@ if (!canvas) {
   //Mouse Up
   document.addEventListener("mouseup", (e) => {
     if (isDrawing) {
-      //drawLine(pen, x, y, e.offsetX, e.offsetY);
       x = 0;
       y = 0;
       isDrawing = false;
@@ -162,13 +153,13 @@ if (!canvas) {
   Undo_Button.textContent = "Undu";
   app.append(Undo_Button);
   Undo_Button.addEventListener("click", () => undoLine(pen));
-  
+
   //Create Redo Button
   const Redo_Button = document.createElement("button");
   Redo_Button.textContent = "Redu";
   app.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine(pen));
-  }
+}
 
 //Draw line
 function drawLine(
@@ -194,10 +185,7 @@ function clearCanvas(context: CanvasRenderingContext2D) {
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
-  //maybe negative here
-  addLine(pointLog,x,y);
-  
- //Maybe clear the undo list too?
+  addLine(pointLog, x, y);
   numLines = 0;
   x = 0;
   y = 0;
@@ -206,48 +194,40 @@ function undoLine(context: CanvasRenderingContext2D) {
   if (canvas) {
     if (pointLog.length > 0) {
       const removed_line = pointLog.pop();
-      if(removed_line){
-        if(removed_line.is_empty()){
+      if (removed_line) {
+        if (removed_line.is_empty()) {
           undoLine(context);
         }
         undoLog.push(removed_line);
         numLines--;
         canvas.dispatchEvent(drawEvent);
-        console.log(removed_line);
         return removed_line;
-        
-      }
-      else{
+      } else {
         console.log("Err Undo: removed_line does not exist");
       }
-
-  } else {
-    console.log("Err Undo: removed line does not exist");
+    } else {
+      console.log("Err Undo: removed line does not exist");
+    }
   }
-}
 }
 function RedoLine(context: CanvasRenderingContext2D) {
   if (canvas) {
-    //if (undoLog.length > 1) {
-      const removed_line = undoLog.pop();
-      if (removed_line){
-        if(!removed_line.is_empty()){
-          pointLog.push(removed_line);
-          numLines++;
-          canvas.dispatchEvent(drawEvent);
-          console.log(removed_line);
-          return removed_line;
-        }
-        else{
-          console.log("Err Redo: removed_line is empty")
-        }
+    const removed_line = undoLog.pop();
+    if (removed_line) {
+      if (!removed_line.is_empty()) {
+        pointLog.push(removed_line);
+        numLines++;
+        canvas.dispatchEvent(drawEvent);
+        return removed_line;
+      } else {
+        console.log("Err Redo: removed_line is empty");
       }
-      else{
-        console.log("Err Redo: removed_line does not exist")
-      }
+    } else {
+      console.log("Err Redo: removed_line does not exist");
+    }
+  }
 }
-}
-function addLine(log:Line[],x:number,y:number){
-  const line1 = new Line(x,y);
+function addLine(log: Line[], x: number, y: number) {
+  const line1 = new Line(x, y);
   log.push(line1);
 }

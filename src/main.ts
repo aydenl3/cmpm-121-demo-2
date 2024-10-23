@@ -20,17 +20,87 @@ interface Point {
   x: number;
   y: number;
 }
-const pointLog: Point[][] = [];
-const line1: Point[] = [];
-pointLog.push(line1);
+const pointLog: Line[] = [];
 
-const undoLog: Point[][] = [];
+
+const undoLog: Line[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
 //Variables
 let isDrawing: boolean = false;
 let x: number = 0;
 let y: number = 0;
 let numLines: number = 0;
+
+
+
+interface canvasElement{
+  display(context:CanvasRenderingContext2D):void;
+}
+
+class Line implements canvasElement{
+  private points: Point[] = [];
+
+  constructor(initialX: number, initialY: number) {
+    this.points.push({ x: initialX, y: initialY });
+  }
+
+  addPoint(x_in: number, y_in: number) {
+    this.points.push({ x:x_in, y:y_in });
+  }
+
+  display(context: CanvasRenderingContext2D): void {
+    console.log(context);
+    if (this.points.length > 0) {
+      for (let i = 0; i < this.points.length - 1; i++) {
+        const thispoint = this.points[i];
+        const nextpoint = this.points[i + 1];
+        drawLine(context, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
+      }
+    } else {
+      //console.log("inner list length 0");
+    }
+  }
+
+  removePoint():Point{
+    const point = this.points.pop();
+    if(point){
+      return point;
+    }
+    else{
+      console.log("ERR REMOVE POINT: NO POINT FOUND");
+      const throwaway: Point = {x:9999, y:9999};
+      return throwaway;
+    }
+  }
+
+  is_empty():boolean{
+    if(this.points.length == 0){
+      return true;
+    }
+    else{
+      return(false);
+    }
+  }
+}
+
+interface Command{
+  execute():void;
+}
+class DisplayLineCommand implements Command{
+   private line: Line;
+   private context: CanvasRenderingContext2D;
+  constructor(line: Line, context: CanvasRenderingContext2D) {
+    this.line = line;
+    this.context = context;    
+  }
+  execute(): void {
+    this.line.display(this.context);
+  }
+}
+
+//----------------------------------------------------------------------
+
+addLine(pointLog,-1,-1);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
@@ -46,8 +116,7 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
-    const newline: Point[] = [];
-    pointLog.push(newline);
+    addLine(pointLog,x,y);
     numLines++;
   });
   //Move Mouse
@@ -55,12 +124,10 @@ if (!canvas) {
     if (isDrawing) {
       x = e.offsetX;
       y = e.offsetY;
-      const newpoint: Point = { x: x, y: y };
       if (!pointLog.length) {
-        const newline: Point[] = [];
-        pointLog.push(newline);
+        addLine(pointLog,x,y);
       }
-      pointLog[numLines].push(newpoint);
+      pointLog[numLines].addPoint(x,y);
       canvas.dispatchEvent(drawEvent);
     }
   });
@@ -69,22 +136,15 @@ if (!canvas) {
     clearCanvas(pen);
     if (pointLog.length > 0) {
       for (const line of pointLog) {
-        if (line.length > 0) {
-          for (let j = 0; j < line.length - 1; j++) {
-            const thispoint = line[j];
-            const nextpoint = line[j + 1];
-            drawLine(pen, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y);
-          }
-        } else {
-          //console.log("inner list length 0");
-        }
+        const drawCommand = new DisplayLineCommand(line,pen);
+        drawCommand.execute();
       }
     }
   });
   //Mouse Up
   document.addEventListener("mouseup", (e) => {
     if (isDrawing) {
-      drawLine(pen, x, y, e.offsetX, e.offsetY);
+      //drawLine(pen, x, y, e.offsetX, e.offsetY);
       x = 0;
       y = 0;
       isDrawing = false;
@@ -134,8 +194,10 @@ function clearCanvas(context: CanvasRenderingContext2D) {
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
-  const newline: Point[] = [];
-  pointLog.push(newline);
+  //maybe negative here
+  addLine(pointLog,x,y);
+  
+ //Maybe clear the undo list too?
   numLines = 0;
   x = 0;
   y = 0;
@@ -145,7 +207,7 @@ function undoLine(context: CanvasRenderingContext2D) {
     if (pointLog.length > 0) {
       const removed_line = pointLog.pop();
       if(removed_line){
-        if(removed_line.length == 0){
+        if(removed_line.is_empty()){
           undoLine(context);
         }
         undoLog.push(removed_line);
@@ -169,7 +231,7 @@ function RedoLine(context: CanvasRenderingContext2D) {
     //if (undoLog.length > 1) {
       const removed_line = undoLog.pop();
       if (removed_line){
-        if(removed_line.length > 0){
+        if(!removed_line.is_empty()){
           pointLog.push(removed_line);
           numLines++;
           canvas.dispatchEvent(drawEvent);
@@ -183,7 +245,9 @@ function RedoLine(context: CanvasRenderingContext2D) {
       else{
         console.log("Err Redo: removed_line does not exist")
       }
-  } else {
-    console.log("No Canvas Found");
-  }
+}
+}
+function addLine(log:Line[],x:number,y:number){
+  const line1 = new Line(x,y);
+  log.push(line1);
 }

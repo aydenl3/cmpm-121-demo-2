@@ -20,16 +20,6 @@ interface Point {
   x: number;
   y: number;
 }
-const pointLog: Line[] = [];
-
-const undoLog: Line[] = [];
-const drawEvent = new CustomEvent("canvasDrawn", {});
-//Variables
-let isDrawing: boolean = false;
-let x: number = 0;
-let y: number = 0;
-let numLines: number = 0;
-let current_thickness: number = 1;
 
 interface canvasElement {
   display(context: CanvasRenderingContext2D): void;
@@ -80,6 +70,30 @@ class Line implements canvasElement {
   }
 }
 
+class Reticle implements canvasElement{
+  private thickness: number = 1;
+  private mouseX: number = 0;
+  private mouseY: number = 0;
+  constructor(){
+
+  }
+  display(context: CanvasRenderingContext2D): void {
+       context.beginPath();
+       context.arc(this.mouseX,this.mouseY,this.thickness,0,Math.PI * 2);
+       context.strokeStyle = "rgba(0, 0, 0, 0.5)";
+       context.stroke();
+  }
+
+  changeThickness(thickness:number): void {
+    this.thickness = thickness;
+  }
+  centerOn(x:number,y:number){
+    this.mouseX = x;
+    this.mouseY = y;
+  }
+}
+
+
 interface Command {
   execute(): void;
 }
@@ -106,6 +120,55 @@ class ChangeLineThicknessCommand implements Command {
       this.line.changeThickness(this.thickness);
     }
 }
+
+class DisplayReticleCommand implements Command {
+  private reticle: Reticle;
+  private context: CanvasRenderingContext2D;
+  constructor(reticle: Reticle, context: CanvasRenderingContext2D) {
+    this.reticle = reticle;
+    this.context = context;
+  }
+  execute(): void {
+    this.reticle.display(this.context);
+  }
+}
+
+class CenterReticleCommand implements Command {
+  private reticle: Reticle;
+  private X: number;
+  private Y: number;
+  constructor(reticle: Reticle,X:number,Y:number){
+    this.reticle = reticle;
+    this.X = X;
+    this.Y = Y;
+  }
+  execute(): void {
+    this.reticle.centerOn(this.X,this.Y);
+  }
+}
+class ChangeReticleThicknessCommand implements Command {
+  private reticle: Reticle;
+  private thickness: number;
+  constructor(reticle: Reticle,thickness:number){
+    this.reticle = reticle;
+    this.thickness = thickness;
+  }
+  execute(): void {
+    this.reticle.changeThickness(this.thickness);
+  }
+}
+
+//Variables
+let isDrawing: boolean = false;
+let x: number = 0;
+let y: number = 0;
+let numLines: number = 0;
+let current_thickness: number = 1;
+const pointLog: Line[] = [];
+const undoLog: Line[] = [];
+const drawEvent = new CustomEvent("canvasDrawn", {});
+const tool_movedEvent = new CustomEvent("toolMoved", {});
+let appReticle:Reticle = new Reticle();
 //----------------------------------------------------------------------
 
 addLine(pointLog, -1, -1,current_thickness);
@@ -124,6 +187,7 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
+    console.log(isDrawing);
     addLine(pointLog, x, y,current_thickness);
     numLines++;
   });
@@ -138,6 +202,13 @@ if (!canvas) {
       pointLog[numLines].addPoint(x, y);
       canvas.dispatchEvent(drawEvent);
     }
+    else{
+      console.log(isDrawing);
+      x = e.offsetX;
+      y = e.offsetY;
+      canvas.dispatchEvent(tool_movedEvent);
+
+    }
   });
   //Draw Event Listener
   canvas.addEventListener("canvasDrawn", () => {
@@ -149,6 +220,22 @@ if (!canvas) {
       }
     }
   });
+  canvas.addEventListener("toolMoved", () => {
+    clearCanvas(pen);
+    if (pointLog.length > 0) {
+      for (const line of pointLog) {
+        const drawCommand = new DisplayLineCommand(line, pen);
+        drawCommand.execute();
+      }
+    }
+    const thicknesstoolCommand = new ChangeReticleThicknessCommand(appReticle,current_thickness);
+    thicknesstoolCommand.execute();
+    const centertoolCommand = new CenterReticleCommand(appReticle,x,y);
+    centertoolCommand.execute();
+    const displaytoolCommand = new DisplayReticleCommand(appReticle,pen);
+    displaytoolCommand.execute();
+  });
+
   //Mouse Up
   document.addEventListener("mouseup", (e) => {
     if (isDrawing) {

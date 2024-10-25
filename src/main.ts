@@ -41,7 +41,14 @@ class Line implements canvasElement {
       for (let i = 0; i < this.points.length - 1; i++) {
         const thispoint = this.points[i];
         const nextpoint = this.points[i + 1];
-        drawLine(context, thispoint.x, thispoint.y, nextpoint.x, nextpoint.y,this.thickness);
+        drawLine(
+          context,
+          thispoint.x,
+          thispoint.y,
+          nextpoint.x,
+          nextpoint.y,
+          this.thickness
+        );
       }
     }
   }
@@ -64,35 +71,72 @@ class Line implements canvasElement {
       return false;
     }
   }
-  
-  changeThickness(thickness:number): void {
+
+  changeThickness(thickness: number): void {
     this.thickness = thickness;
   }
 }
 
-class Reticle implements canvasElement{
+class Reticle implements canvasElement {
   private thickness: number = 1;
   private mouseX: number = 0;
   private mouseY: number = 0;
-  constructor(){
-
-  }
+  private emoji: string = "";
+  constructor() {}
   display(context: CanvasRenderingContext2D): void {
-       context.beginPath();
-       context.arc(this.mouseX,this.mouseY,this.thickness,0,Math.PI * 2);
-       context.strokeStyle = "rgba(0, 0, 0, 0.5)";
-       context.stroke();
+    if(current_mode == "line"){
+      context.beginPath();
+      context.arc(this.mouseX, this.mouseY, this.thickness, 0, Math.PI * 2);
+      context.strokeStyle = "rgba(0, 0, 0, 0.5)";
+      context.stroke();
+    }
+    else{
+      //console.log(this.emoji);
+      context.font = "35px serif";
+      context.fillText(this.emoji,this.mouseX,this.mouseY);
+    }
+
   }
 
-  changeThickness(thickness:number): void {
+  changeThickness(thickness: number): void {
     this.thickness = thickness;
   }
-  centerOn(x:number,y:number){
+  centerOn(x: number, y: number) {
     this.mouseX = x;
     this.mouseY = y;
   }
+  setEmoji(emoji:string){
+    this.emoji = emoji;
+  }
 }
 
+class Sticker implements canvasElement {
+  private emoji : string;
+  public thisX: number = 0;
+  public thisY: number = 0;
+  private angle: number = 0;
+  constructor(emoji:string,x:number,y:number){
+    this.emoji = emoji;
+    this.thisX = x;
+    this.thisY = y;
+  }
+  display(context: CanvasRenderingContext2D): void {
+    context.font = "30px serif";
+    context.fillText(this.emoji,this.thisX,this.thisY);
+
+  }
+  setEmoji(emoji:string){
+    this.emoji = emoji;
+  }
+  centerOn(x:number, y:number){
+    this.thisX = x;
+    this.thisY = y;
+  }
+  rotate(angle:number){
+    const newangle = angle* Math.PI / 180;
+    this.angle = newangle;
+  }
+}
 
 interface Command {
   execute(): void;
@@ -110,15 +154,15 @@ class DisplayLineCommand implements Command {
 }
 
 class ChangeLineThicknessCommand implements Command {
-    private line: Line;
-    private thickness: number;
-    constructor(line: Line,thickness:number){
-      this.line = line;
-      this.thickness = thickness;
-    }
-    execute(): void {
-      this.line.changeThickness(this.thickness);
-    }
+  private line: Line;
+  private thickness: number;
+  constructor(line: Line, thickness: number) {
+    this.line = line;
+    this.thickness = thickness;
+  }
+  execute(): void {
+    this.line.changeThickness(this.thickness);
+  }
 }
 
 class DisplayReticleCommand implements Command {
@@ -137,24 +181,81 @@ class CenterReticleCommand implements Command {
   private reticle: Reticle;
   private X: number;
   private Y: number;
-  constructor(reticle: Reticle,X:number,Y:number){
+  constructor(reticle: Reticle, X: number, Y: number) {
     this.reticle = reticle;
     this.X = X;
     this.Y = Y;
   }
   execute(): void {
-    this.reticle.centerOn(this.X,this.Y);
+    this.reticle.centerOn(this.X, this.Y);
   }
 }
 class ChangeReticleThicknessCommand implements Command {
   private reticle: Reticle;
   private thickness: number;
-  constructor(reticle: Reticle,thickness:number){
+  constructor(reticle: Reticle, thickness: number) {
     this.reticle = reticle;
     this.thickness = thickness;
   }
   execute(): void {
     this.reticle.changeThickness(this.thickness);
+  }
+}
+class SetReticleEmojiCommand implements Command {
+  private reticle: Reticle;
+  private emoji: string;
+  constructor(reticle: Reticle, emoji: string) {
+    this.reticle = reticle;
+    this.emoji = emoji;
+  }
+  execute(): void {
+    this.reticle.setEmoji(this.emoji);
+  }
+}
+class SetStickerEmojiCommand implements Command {
+  private sticker: Sticker;
+  private emoji: string;
+  constructor(sticker: Sticker, emoji: string) {
+    this.sticker = sticker;
+    this.emoji = emoji;
+  }
+  execute(): void {
+    this.sticker.setEmoji(this.emoji);
+  }
+}
+class CenterStickerCommand implements Command {
+  private sticker: Sticker;
+  private X: number;
+  private Y: number;
+  constructor(sticker: Sticker, X: number, Y: number) {
+    this.sticker = sticker;
+    this.X = X;
+    this.Y = Y;
+  }
+  execute(): void {
+    this.sticker.centerOn(this.X, this.Y);
+  }
+}
+class RotateStickerCommand implements Command {
+  private sticker: Sticker;
+  private angle: number;
+  constructor(sticker: Sticker, angle: number){
+    this.sticker = sticker;
+    this.angle = angle;
+  }
+  execute(): void {
+    this.sticker.rotate(this.angle);
+  }
+}
+class DisplayStickerCommand implements Command {
+  private sticker: Sticker;
+  private context: CanvasRenderingContext2D;
+  constructor(sticker: Sticker, context: CanvasRenderingContext2D) {
+    this.sticker = sticker;
+    this.context = context;
+  }
+  execute(): void {
+    this.sticker.display(this.context);
   }
 }
 
@@ -164,14 +265,17 @@ let x: number = 0;
 let y: number = 0;
 let numLines: number = 0;
 let current_thickness: number = 1;
-const pointLog: Line[] = [];
+let current_mode: string = "line";
+const pointLog: Line [] = [];
 const undoLog: Line[] = [];
+const stickerLog: Sticker[] = [];
+const undostickerLog: Sticker[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
 const tool_movedEvent = new CustomEvent("toolMoved", {});
-let appReticle:Reticle = new Reticle();
+const appReticle: Reticle = new Reticle();
 //----------------------------------------------------------------------
 
-addLine(pointLog, -1, -1,current_thickness);
+addLine(pointLog, -1, -1, current_thickness);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
@@ -187,32 +291,65 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
-    console.log(isDrawing);
-    addLine(pointLog, x, y,current_thickness);
-    numLines++;
+    if(current_mode == "line"){
+      addLine(pointLog, x, y, current_thickness);
+      numLines++;
+    }
+    else{
+      //console.log(stickerLog);
+      addSticker(stickerLog, x, y,current_mode);
+
+      canvas.dispatchEvent(drawEvent);
+    }
+
   });
   //Move Mouse
   canvas.addEventListener("mousemove", (e) => {
     if (isDrawing) {
-      x = e.offsetX;
-      y = e.offsetY;
-      if (!pointLog.length) {
-        addLine(pointLog, x, y,current_thickness);
+      if (current_mode == "line"){
+        x = e.offsetX;
+        y = e.offsetY;
+        if (!pointLog.length) {
+          addLine(pointLog, x, y, current_thickness);
+        }
+        pointLog[numLines].addPoint(x, y);
+        canvas.dispatchEvent(drawEvent);
       }
-      pointLog[numLines].addPoint(x, y);
-      canvas.dispatchEvent(drawEvent);
-    }
-    else{
-      console.log(isDrawing);
+      else{
+        x = e.offsetX;
+        y = e.offsetY;
+        const last_sticker = stickerLog[stickerLog.length-1];
+        if(last_sticker){
+          const stickercenterCommand = new CenterStickerCommand(last_sticker,x,y);
+          stickercenterCommand.execute();
+          /*const stickerspinCommand = new RotateStickerCommand(last_sticker,1);
+          stickerspinCommand.execute();
+          */
+          canvas.dispatchEvent(drawEvent);
+        }
+        else{
+          console.log("cant drag sticker");
+        }
+        
+
+      }
+
+    } else {
+      //console.log(isDrawing);
       x = e.offsetX;
       y = e.offsetY;
       canvas.dispatchEvent(tool_movedEvent);
-
     }
   });
   //Draw Event Listener
   canvas.addEventListener("canvasDrawn", () => {
     clearCanvas(pen);
+    if (stickerLog.length > 0) {
+      for (const sticker of stickerLog) {
+        const stickerdrawCommand = new DisplayStickerCommand(sticker,pen);
+        stickerdrawCommand.execute();
+      }
+    }
     if (pointLog.length > 0) {
       for (const line of pointLog) {
         const drawCommand = new DisplayLineCommand(line, pen);
@@ -222,18 +359,33 @@ if (!canvas) {
   });
   canvas.addEventListener("toolMoved", () => {
     clearCanvas(pen);
+    if (stickerLog.length > 0) {
+      for (const sticker of stickerLog) {
+        const stickerdrawCommand = new DisplayStickerCommand(sticker,pen);
+        stickerdrawCommand.execute();
+      }
+    }
     if (pointLog.length > 0) {
       for (const line of pointLog) {
         const drawCommand = new DisplayLineCommand(line, pen);
         drawCommand.execute();
       }
     }
-    const thicknesstoolCommand = new ChangeReticleThicknessCommand(appReticle,current_thickness);
-    thicknesstoolCommand.execute();
-    const centertoolCommand = new CenterReticleCommand(appReticle,x,y);
-    centertoolCommand.execute();
-    const displaytoolCommand = new DisplayReticleCommand(appReticle,pen);
-    displaytoolCommand.execute();
+    if (current_mode != "line"){
+      //console.log("igothere");
+      const emojisetCommand = new SetReticleEmojiCommand(appReticle,current_mode);
+      emojisetCommand.execute();
+    }
+      const thicknesstoolCommand = new ChangeReticleThicknessCommand(
+        appReticle,
+        current_thickness
+      );
+      thicknesstoolCommand.execute();
+      const centertoolCommand = new CenterReticleCommand(appReticle, x, y);
+      centertoolCommand.execute();
+      const displaytoolCommand = new DisplayReticleCommand(appReticle, pen);
+      displaytoolCommand.execute();
+
   });
 
   //Mouse Up
@@ -267,14 +419,31 @@ if (!canvas) {
   const Thick_Button = document.createElement("button");
   Thick_Button.textContent = "Thik";
   app.append(Thick_Button);
-  Thick_Button.addEventListener("click", () => ChangeThickness(pen,3));
-  
+  Thick_Button.addEventListener("click", () => ChangeThickness(pen, 3));
+
   //Create Thin Button
   const Thin_Button = document.createElement("button");
   Thin_Button.textContent = "Thyn";
   app.append(Thin_Button);
-  Thin_Button.addEventListener("click", () => ChangeThickness(pen,1));
-    
+  Thin_Button.addEventListener("click", () => ChangeThickness(pen, 1));
+  
+  //Create Smile Button
+  const Smile_Button = document.createElement("button");
+  Smile_Button.textContent = "Smyle";
+  app.append(Smile_Button);
+  Smile_Button.addEventListener("click", () => ChangeMode(pen, "🙂"));
+  
+  //Create Shrimp Button
+  const Shrimp_Button = document.createElement("button");
+  Shrimp_Button.textContent = "Shrmp";
+  app.append(Shrimp_Button);
+  Shrimp_Button.addEventListener("click", () => ChangeMode(pen, "🦐"));
+  
+  //Create Tree Button
+  const Tree_Button = document.createElement("button");
+  Tree_Button.textContent = "Chree";
+  app.append(Tree_Button);
+  Tree_Button.addEventListener("click", () => ChangeMode(pen, "🌲"));
 }
 
 //Draw line
@@ -296,13 +465,14 @@ function drawLine(
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
-  context.fillStyle = "cornsilk";
-  context.fillRect(0, 0, Canvas_SizeX, Canvas_SizeY);
+  //context.fillStyle = "cornsilk";
+  //context.fillRect(0, 0, Canvas_SizeX, Canvas_SizeY);
 }
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
   undoLog.length = 0;
+  stickerLog.length = 0;
   addLine(pointLog, x, y, current_thickness);
   numLines = 0;
   x = 0;
@@ -347,10 +517,19 @@ function RedoLine(context: CanvasRenderingContext2D) {
 }
 function addLine(log: Line[], x: number, y: number, thickness: number) {
   const line1 = new Line(x, y);
-  const thicknessCommand = new ChangeLineThicknessCommand(line1,thickness);
+  const thicknessCommand = new ChangeLineThicknessCommand(line1, thickness);
   thicknessCommand.execute();
   log.push(line1);
 }
-function ChangeThickness(context: CanvasRenderingContext2D,thickness:number) {
+function addSticker(log: Sticker[], x: number, y: number,emoji:string) {
+  const sticker1 = new Sticker(emoji,x,y);
+  log.push(sticker1);
+}
+function ChangeThickness(context: CanvasRenderingContext2D, thickness: number) {
+  current_mode = "line";
   current_thickness = thickness;
+}
+function ChangeMode(context: CanvasRenderingContext2D, mode: string) {
+  current_mode = mode;
+  console.log(mode);
 }

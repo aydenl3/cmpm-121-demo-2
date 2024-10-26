@@ -12,10 +12,7 @@ const header = document.createElement("h1");
 header.innerHTML = gameName;
 app.append(header);
 
-// Create Canvas
-const Canvas_SizeX: number = 256;
-const Canvas_SizeY: number = 256;
-//Drawing Logic
+
 interface Point {
   x: number;
   y: number;
@@ -270,6 +267,8 @@ const buttonLog: HTMLButtonElement[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
 const tool_movedEvent = new CustomEvent("toolMoved", {});
 const appReticle: Reticle = new Reticle();
+const Canvas_SizeX: number = 256;
+const Canvas_SizeY: number = 256;
 //----------------------------------------------------------------------
 
 addLine(pointLog, -1, -1, current_thickness);
@@ -433,6 +432,12 @@ if (!canvas) {
   app.append(Thin_Button);
   Thin_Button.addEventListener("click", () => ChangeThickness(pen, 1));
 
+  //Create Thin Button
+  const Export_Button = document.createElement("button");
+  Export_Button.textContent = "Export";
+  app.append(Export_Button);
+  Export_Button.addEventListener("click", () => export_Canvas());
+
   //Create Custom Button
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = "New Sticker";
@@ -459,6 +464,35 @@ function ask(context: CanvasRenderingContext2D) {
   const text = prompt("Paste in Sticker or Text", "🐌");
   if (text) {
     makeButton(text, context);
+  }
+}
+function export_Canvas() {
+  const newCanvas = document.createElement("canvas");
+  newCanvas.width = 1024;
+  newCanvas.height = 1024;
+  const export_pen = newCanvas.getContext("2d");
+  if (export_pen) {
+    export_pen.scale(4, 4);
+    clearCanvas(export_pen);
+    if (stickerLog.length > 0) {
+      for (const sticker of stickerLog) {
+        const stickerdrawCommand = new DisplayStickerCommand(
+          sticker,
+          export_pen
+        );
+        stickerdrawCommand.execute();
+      }
+    }
+    if (pointLog.length > 0) {
+      for (const line of pointLog) {
+        const drawCommand = new DisplayLineCommand(line, export_pen);
+        drawCommand.execute();
+      }
+    }
+    const anchor = document.createElement("a");
+    anchor.href = newCanvas.toDataURL("image/png");
+    anchor.download = "sketchpad.png";
+    anchor.click();
   }
 }
 //Draw line

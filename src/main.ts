@@ -58,7 +58,7 @@ class Line implements canvasElement {
     if (point) {
       return point;
     } else {
-      console.log("ERR REMOVE POINT: NO POINT FOUND");
+      console.log("ERR Remove Point: No Point Found");
       const throwaway: Point = { x: 9999, y: 9999 };
       return throwaway;
     }
@@ -84,18 +84,15 @@ class Reticle implements canvasElement {
   private emoji: string = "";
   constructor() {}
   display(context: CanvasRenderingContext2D): void {
-    if(current_mode == "line"){
+    if (current_mode == "line") {
       context.beginPath();
       context.arc(this.mouseX, this.mouseY, this.thickness, 0, Math.PI * 2);
       context.strokeStyle = "rgba(0, 0, 0, 0.5)";
       context.stroke();
-    }
-    else{
-      //console.log(this.emoji);
+    } else {
       context.font = "35px serif";
-      context.fillText(this.emoji,this.mouseX,this.mouseY);
+      context.fillText(this.emoji, this.mouseX, this.mouseY);
     }
-
   }
 
   changeThickness(thickness: number): void {
@@ -105,35 +102,34 @@ class Reticle implements canvasElement {
     this.mouseX = x;
     this.mouseY = y;
   }
-  setEmoji(emoji:string){
+  setEmoji(emoji: string) {
     this.emoji = emoji;
   }
 }
 
 class Sticker implements canvasElement {
-  private emoji : string;
+  private emoji: string;
   public thisX: number = 0;
   public thisY: number = 0;
   private angle: number = 0;
-  constructor(emoji:string,x:number,y:number){
+  constructor(emoji: string, x: number, y: number) {
     this.emoji = emoji;
     this.thisX = x;
     this.thisY = y;
   }
   display(context: CanvasRenderingContext2D): void {
     context.font = "30px serif";
-    context.fillText(this.emoji,this.thisX,this.thisY);
-
+    context.fillText(this.emoji, this.thisX, this.thisY);
   }
-  setEmoji(emoji:string){
+  setEmoji(emoji: string) {
     this.emoji = emoji;
   }
-  centerOn(x:number, y:number){
+  centerOn(x: number, y: number) {
     this.thisX = x;
     this.thisY = y;
   }
-  rotate(angle:number){
-    const newangle = angle* Math.PI / 180;
+  rotate(angle: number) {
+    const newangle = (angle * Math.PI) / 180;
     this.angle = newangle;
   }
 }
@@ -239,7 +235,7 @@ class CenterStickerCommand implements Command {
 class RotateStickerCommand implements Command {
   private sticker: Sticker;
   private angle: number;
-  constructor(sticker: Sticker, angle: number){
+  constructor(sticker: Sticker, angle: number) {
     this.sticker = sticker;
     this.angle = angle;
   }
@@ -266,10 +262,11 @@ let y: number = 0;
 let numLines: number = 0;
 let current_thickness: number = 1;
 let current_mode: string = "line";
-const pointLog: Line [] = [];
+const pointLog: Line[] = [];
 const undoLog: Line[] = [];
 const stickerLog: Sticker[] = [];
 const undostickerLog: Sticker[] = [];
+const buttonLog: HTMLButtonElement[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
 const tool_movedEvent = new CustomEvent("toolMoved", {});
 const appReticle: Reticle = new Reticle();
@@ -279,7 +276,7 @@ addLine(pointLog, -1, -1, current_thickness);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
-  console.log("No canvas element found");
+  console.log("ERR Make Canvas: No Canvas Element Found");
 } else {
   // @ts-ignore: keep getting error "getContext does not exist on type HTML, when it works fine"
   const pen = canvas.getContext("2d");
@@ -291,54 +288,50 @@ if (!canvas) {
     x = e.offsetX;
     y = e.offsetY;
     isDrawing = true;
-    if(current_mode == "line"){
+    if (current_mode == "line") {
       addLine(pointLog, x, y, current_thickness);
       numLines++;
-    }
-    else{
-      //console.log(stickerLog);
-      addSticker(stickerLog, x, y,current_mode);
+    } else {
+      addSticker(stickerLog, x, y, current_mode);
 
       canvas.dispatchEvent(drawEvent);
     }
-
   });
   //Move Mouse
   canvas.addEventListener("mousemove", (e) => {
-    if (isDrawing) {
-      if (current_mode == "line"){
-        x = e.offsetX;
-        y = e.offsetY;
-        if (!pointLog.length) {
-          addLine(pointLog, x, y, current_thickness);
-        }
-        pointLog[numLines].addPoint(x, y);
-        canvas.dispatchEvent(drawEvent);
-      }
-      else{
-        x = e.offsetX;
-        y = e.offsetY;
-        const last_sticker = stickerLog[stickerLog.length-1];
-        if(last_sticker){
-          const stickercenterCommand = new CenterStickerCommand(last_sticker,x,y);
-          stickercenterCommand.execute();
-          /*const stickerspinCommand = new RotateStickerCommand(last_sticker,1);
-          stickerspinCommand.execute();
-          */
+    if (e.offsetX >= 0 && e.offsetX <= Canvas_SizeX) {
+      if (isDrawing) {
+        if (current_mode == "line") {
+          x = e.offsetX;
+          y = e.offsetY;
+          if (!pointLog.length) {
+            addLine(pointLog, x, y, current_thickness);
+          }
+          pointLog[numLines].addPoint(x, y);
           canvas.dispatchEvent(drawEvent);
+        } else {
+          x = e.offsetX;
+          y = e.offsetY;
+          const last_sticker = stickerLog[stickerLog.length - 1];
+          if (last_sticker) {
+            const stickercenterCommand = new CenterStickerCommand(
+              last_sticker,
+              x,
+              y
+            );
+            stickercenterCommand.execute();
+            canvas.dispatchEvent(drawEvent);
+          } else {
+            console.log("ERR Drag Sticker: Can't Drag Sticker");
+          }
         }
-        else{
-          console.log("cant drag sticker");
-        }
-        
-
+      } else {
+        x = e.offsetX;
+        y = e.offsetY;
+        canvas.dispatchEvent(tool_movedEvent);
       }
-
     } else {
-      //console.log(isDrawing);
-      x = e.offsetX;
-      y = e.offsetY;
-      canvas.dispatchEvent(tool_movedEvent);
+      canvas.dispatchEvent(drawEvent);
     }
   });
   //Draw Event Listener
@@ -346,7 +339,7 @@ if (!canvas) {
     clearCanvas(pen);
     if (stickerLog.length > 0) {
       for (const sticker of stickerLog) {
-        const stickerdrawCommand = new DisplayStickerCommand(sticker,pen);
+        const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
         stickerdrawCommand.execute();
       }
     }
@@ -361,7 +354,7 @@ if (!canvas) {
     clearCanvas(pen);
     if (stickerLog.length > 0) {
       for (const sticker of stickerLog) {
-        const stickerdrawCommand = new DisplayStickerCommand(sticker,pen);
+        const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
         stickerdrawCommand.execute();
       }
     }
@@ -371,21 +364,22 @@ if (!canvas) {
         drawCommand.execute();
       }
     }
-    if (current_mode != "line"){
-      //console.log("igothere");
-      const emojisetCommand = new SetReticleEmojiCommand(appReticle,current_mode);
+    if (current_mode != "line") {
+      const emojisetCommand = new SetReticleEmojiCommand(
+        appReticle,
+        current_mode
+      );
       emojisetCommand.execute();
     }
-      const thicknesstoolCommand = new ChangeReticleThicknessCommand(
-        appReticle,
-        current_thickness
-      );
-      thicknesstoolCommand.execute();
-      const centertoolCommand = new CenterReticleCommand(appReticle, x, y);
-      centertoolCommand.execute();
-      const displaytoolCommand = new DisplayReticleCommand(appReticle, pen);
-      displaytoolCommand.execute();
-
+    const thicknesstoolCommand = new ChangeReticleThicknessCommand(
+      appReticle,
+      current_thickness
+    );
+    thicknesstoolCommand.execute();
+    const centertoolCommand = new CenterReticleCommand(appReticle, x, y);
+    centertoolCommand.execute();
+    const displaytoolCommand = new DisplayReticleCommand(appReticle, pen);
+    displaytoolCommand.execute();
   });
 
   //Mouse Up
@@ -415,6 +409,18 @@ if (!canvas) {
   app.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine(pen));
 
+  //Create Undo Button
+  const Sticker_Undo_Button = document.createElement("button");
+  Sticker_Undo_Button.textContent = "Peel Off";
+  app.append(Sticker_Undo_Button);
+  Sticker_Undo_Button.addEventListener("click", () => undoSticker(pen));
+
+  //Create Redo Button
+  const Sticker_Redo_Button = document.createElement("button");
+  Sticker_Redo_Button.textContent = "Stick Back";
+  app.append(Sticker_Redo_Button);
+  Sticker_Redo_Button.addEventListener("click", () => RedoSticker(pen));
+
   //Create Thick Button
   const Thick_Button = document.createElement("button");
   Thick_Button.textContent = "Thik";
@@ -426,26 +432,35 @@ if (!canvas) {
   Thin_Button.textContent = "Thyn";
   app.append(Thin_Button);
   Thin_Button.addEventListener("click", () => ChangeThickness(pen, 1));
-  
+
+  //Create Custom Button
+  const Custom_Button = document.createElement("button");
+  Custom_Button.textContent = "New Sticker";
+  app.append(Custom_Button);
+  Custom_Button.addEventListener("click", () => ask(pen));
   //Create Smile Button
-  const Smile_Button = document.createElement("button");
-  Smile_Button.textContent = "Smyle";
-  app.append(Smile_Button);
-  Smile_Button.addEventListener("click", () => ChangeMode(pen, "🙂"));
-  
+  makeButton("🙂", pen);
+
   //Create Shrimp Button
-  const Shrimp_Button = document.createElement("button");
-  Shrimp_Button.textContent = "Shrmp";
-  app.append(Shrimp_Button);
-  Shrimp_Button.addEventListener("click", () => ChangeMode(pen, "🦐"));
-  
+  makeButton("🦐", pen);
+
   //Create Tree Button
-  const Tree_Button = document.createElement("button");
-  Tree_Button.textContent = "Chree";
-  app.append(Tree_Button);
-  Tree_Button.addEventListener("click", () => ChangeMode(pen, "🌲"));
+  makeButton("🌲", pen);
 }
 
+function makeButton(value: string, context: CanvasRenderingContext2D) {
+  const Custom_Button = document.createElement("button");
+  Custom_Button.textContent = value;
+  app.append(Custom_Button);
+  Custom_Button.addEventListener("click", () => ChangeMode(context, value));
+  buttonLog.push(Custom_Button);
+}
+function ask(context: CanvasRenderingContext2D) {
+  const text = prompt("Paste in Sticker or Text", "🐌");
+  if (text) {
+    makeButton(text, context);
+  }
+}
 //Draw line
 function drawLine(
   context: CanvasRenderingContext2D,
@@ -465,8 +480,6 @@ function drawLine(
 }
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
-  //context.fillStyle = "cornsilk";
-  //context.fillRect(0, 0, Canvas_SizeX, Canvas_SizeY);
 }
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
@@ -491,10 +504,10 @@ function undoLine(context: CanvasRenderingContext2D) {
         canvas.dispatchEvent(drawEvent);
         return removed_line;
       } else {
-        console.log("Err Undo: removed_line does not exist");
+        console.log("ERR Undo: Removed_line Does Not Exist");
       }
     } else {
-      console.log("Err Undo: removed line does not exist");
+      console.log("ERR Undo: Removed_line Does Not Exist");
     }
   }
 }
@@ -508,10 +521,38 @@ function RedoLine(context: CanvasRenderingContext2D) {
         canvas.dispatchEvent(drawEvent);
         return removed_line;
       } else {
-        console.log("Err Redo: removed_line is empty");
+        console.log("ERR Redo: Removed_line Is Empty");
       }
     } else {
-      console.log("Err Redo: removed_line does not exist");
+      console.log("ERR Redo: Removed_line Does Not Exist");
+    }
+  }
+}
+function undoSticker(context: CanvasRenderingContext2D) {
+  if (canvas) {
+    if (stickerLog.length > 0) {
+      const removed_sticker = stickerLog.pop();
+      if (removed_sticker) {
+        undostickerLog.push(removed_sticker);
+        canvas.dispatchEvent(drawEvent);
+        return removed_sticker;
+      } else {
+        console.log("ERR Undo: Removed_sticker Does Not Exist");
+      }
+    } else {
+      console.log("ERR Undo: Removed_sticker Does Not Exist");
+    }
+  }
+}
+function RedoSticker(context: CanvasRenderingContext2D) {
+  if (canvas) {
+    const removed_sticker = undostickerLog.pop();
+    if (removed_sticker) {
+      stickerLog.push(removed_sticker);
+      canvas.dispatchEvent(drawEvent);
+      return removed_sticker;
+    } else {
+      console.log("ERR Redo: Removed_sticker Does Not Exist");
     }
   }
 }
@@ -521,8 +562,8 @@ function addLine(log: Line[], x: number, y: number, thickness: number) {
   thicknessCommand.execute();
   log.push(line1);
 }
-function addSticker(log: Sticker[], x: number, y: number,emoji:string) {
-  const sticker1 = new Sticker(emoji,x,y);
+function addSticker(log: Sticker[], x: number, y: number, emoji: string) {
+  const sticker1 = new Sticker(emoji, x, y);
   log.push(sticker1);
 }
 function ChangeThickness(context: CanvasRenderingContext2D, thickness: number) {
@@ -531,5 +572,4 @@ function ChangeThickness(context: CanvasRenderingContext2D, thickness: number) {
 }
 function ChangeMode(context: CanvasRenderingContext2D, mode: string) {
   current_mode = mode;
-  console.log(mode);
 }

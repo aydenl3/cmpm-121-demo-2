@@ -12,16 +12,16 @@ const header = document.createElement("h1");
 header.innerHTML = gameName;
 app.append(header);
 
-
+//Creates Point Interface
 interface Point {
   x: number;
   y: number;
 }
-
+//Creates Canvas Element
 interface canvasElement {
   display(context: CanvasRenderingContext2D): void;
 }
-
+//Creates Line Class and Methods
 class Line implements canvasElement {
   private points: Point[] = [];
   private thickness: number = 1;
@@ -29,10 +29,11 @@ class Line implements canvasElement {
     this.points.push({ x: initialX, y: initialY });
   }
 
+  //Adds a point to the list of points in this line
   addPoint(x_in: number, y_in: number) {
     this.points.push({ x: x_in, y: y_in });
   }
-
+  //Draws all the points in the line
   display(context: CanvasRenderingContext2D): void {
     if (this.points.length > 0) {
       for (let i = 0; i < this.points.length - 1; i++) {
@@ -49,7 +50,7 @@ class Line implements canvasElement {
       }
     }
   }
-
+  //removes a point from the line
   removePoint(): Point {
     const point = this.points.pop();
     if (point) {
@@ -60,7 +61,7 @@ class Line implements canvasElement {
       return throwaway;
     }
   }
-
+  //checks if the line has no points
   is_empty(): boolean {
     if (this.points.length == 0) {
       return true;
@@ -68,18 +69,19 @@ class Line implements canvasElement {
       return false;
     }
   }
-
+  //changes the thickness of the line
   changeThickness(thickness: number): void {
     this.thickness = thickness;
   }
 }
-
+//Creates Hover Reticle Class and Methods
 class Reticle implements canvasElement {
   private thickness: number = 1;
   private mouseX: number = 0;
   private mouseY: number = 0;
   private emoji: string = "";
   constructor() {}
+  //draws the reticle above the canvas
   display(context: CanvasRenderingContext2D): void {
     if (current_mode == "line") {
       context.beginPath();
@@ -91,19 +93,21 @@ class Reticle implements canvasElement {
       context.fillText(this.emoji, this.mouseX, this.mouseY);
     }
   }
-
+  //chenges the thickness of the reticle
   changeThickness(thickness: number): void {
     this.thickness = thickness;
   }
+  //centers the reticle to a point
   centerOn(x: number, y: number) {
     this.mouseX = x;
     this.mouseY = y;
   }
+  //sets data for the reticle
   setEmoji(emoji: string) {
     this.emoji = emoji;
   }
 }
-
+//Sticker Class and methods
 class Sticker implements canvasElement {
   private emoji: string;
   public thisX: number = 0;
@@ -114,13 +118,16 @@ class Sticker implements canvasElement {
     this.thisX = x;
     this.thisY = y;
   }
+  //draws Stickers
   display(context: CanvasRenderingContext2D): void {
     context.font = "30px serif";
     context.fillText(this.emoji, this.thisX, this.thisY);
   }
+  //sets data of sticker
   setEmoji(emoji: string) {
     this.emoji = emoji;
   }
+  //determines sticker location
   centerOn(x: number, y: number) {
     this.thisX = x;
     this.thisY = y;
@@ -130,7 +137,7 @@ class Sticker implements canvasElement {
     this.angle = newangle;
   }
 }
-
+//Command Interface
 interface Command {
   execute(): void;
 }
@@ -269,6 +276,8 @@ const tool_movedEvent = new CustomEvent("toolMoved", {});
 const appReticle: Reticle = new Reticle();
 const Canvas_SizeX: number = 256;
 const Canvas_SizeY: number = 256;
+const thick_pen_size: number = 4;
+const thin_pen_size: number = 2;
 //----------------------------------------------------------------------
 
 addLine(pointLog, -1, -1, current_thickness);
@@ -349,6 +358,7 @@ if (!canvas) {
       }
     }
   });
+  //Hover Event Listener
   canvas.addEventListener("toolMoved", () => {
     clearCanvas(pen);
     if (stickerLog.length > 0) {
@@ -424,13 +434,13 @@ if (!canvas) {
   const Thick_Button = document.createElement("button");
   Thick_Button.textContent = "Thik";
   app.append(Thick_Button);
-  Thick_Button.addEventListener("click", () => ChangeThickness(pen, 3));
+  Thick_Button.addEventListener("click", () => ChangeThickness(pen, thick_pen_size));
 
   //Create Thin Button
   const Thin_Button = document.createElement("button");
   Thin_Button.textContent = "Thyn";
   app.append(Thin_Button);
-  Thin_Button.addEventListener("click", () => ChangeThickness(pen, 1));
+  Thin_Button.addEventListener("click", () => ChangeThickness(pen, thin_pen_size));
 
   //Create Thin Button
   const Export_Button = document.createElement("button");
@@ -453,6 +463,7 @@ if (!canvas) {
   makeButton("🌲", pen);
 }
 
+//Make a new sticker
 function makeButton(value: string, context: CanvasRenderingContext2D) {
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = value;
@@ -460,12 +471,14 @@ function makeButton(value: string, context: CanvasRenderingContext2D) {
   Custom_Button.addEventListener("click", () => ChangeMode(context, value));
   buttonLog.push(Custom_Button);
 }
+//Create a prompt for new sticker data
 function ask(context: CanvasRenderingContext2D) {
   const text = prompt("Paste in Sticker or Text", "🐌");
   if (text) {
     makeButton(text, context);
   }
 }
+//Export the canvas
 function export_Canvas() {
   const newCanvas = document.createElement("canvas");
   newCanvas.width = 1024;
@@ -512,9 +525,11 @@ function drawLine(
   context.stroke();
   context.closePath();
 }
+//Clear the canvas
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
 }
+//Clear the canvas, and remove all data
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
@@ -525,6 +540,7 @@ function formatCanvas(context: CanvasRenderingContext2D) {
   x = 0;
   y = 0;
 }
+//undo a line
 function undoLine(context: CanvasRenderingContext2D) {
   if (canvas) {
     if (pointLog.length > 0) {
@@ -545,6 +561,7 @@ function undoLine(context: CanvasRenderingContext2D) {
     }
   }
 }
+//redo a line
 function RedoLine(context: CanvasRenderingContext2D) {
   if (canvas) {
     const removed_line = undoLog.pop();
@@ -562,6 +579,7 @@ function RedoLine(context: CanvasRenderingContext2D) {
     }
   }
 }
+//undo a sticker
 function undoSticker(context: CanvasRenderingContext2D) {
   if (canvas) {
     if (stickerLog.length > 0) {
@@ -578,6 +596,7 @@ function undoSticker(context: CanvasRenderingContext2D) {
     }
   }
 }
+//redo a sticker
 function RedoSticker(context: CanvasRenderingContext2D) {
   if (canvas) {
     const removed_sticker = undostickerLog.pop();
@@ -590,20 +609,24 @@ function RedoSticker(context: CanvasRenderingContext2D) {
     }
   }
 }
+// add a line to the log of lines
 function addLine(log: Line[], x: number, y: number, thickness: number) {
   const line1 = new Line(x, y);
   const thicknessCommand = new ChangeLineThicknessCommand(line1, thickness);
   thicknessCommand.execute();
   log.push(line1);
 }
+//add a sticker to the log of stickers
 function addSticker(log: Sticker[], x: number, y: number, emoji: string) {
   const sticker1 = new Sticker(emoji, x, y);
   log.push(sticker1);
 }
+//change thickness of a line
 function ChangeThickness(context: CanvasRenderingContext2D, thickness: number) {
   current_mode = "line";
   current_thickness = thickness;
 }
+//change whether we are in sticker or line mode
 function ChangeMode(context: CanvasRenderingContext2D, mode: string) {
   current_mode = mode;
 }

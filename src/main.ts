@@ -1,6 +1,6 @@
 import "./style.css";
 
-const APP_NAME = "Hallo";
+const APP_NAME = "Welcome";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 app.innerHTML = APP_NAME;
@@ -408,13 +408,13 @@ if (!canvas) {
 
   //Create Undo Button
   const Undo_Button = document.createElement("button");
-  Undo_Button.textContent = "Undu";
+  Undo_Button.textContent = "Undo";
   app.append(Undo_Button);
   Undo_Button.addEventListener("click", () => undoLine(pen));
 
   //Create Redo Button
   const Redo_Button = document.createElement("button");
-  Redo_Button.textContent = "Redu";
+  Redo_Button.textContent = "Redo";
   app.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine(pen));
 
@@ -432,13 +432,13 @@ if (!canvas) {
 
   //Create Thick Button
   const Thick_Button = document.createElement("button");
-  Thick_Button.textContent = "Thik";
+  Thick_Button.textContent = "Thick";
   app.append(Thick_Button);
   Thick_Button.addEventListener("click", () => ChangeThickness(pen, thick_pen_size));
 
   //Create Thin Button
   const Thin_Button = document.createElement("button");
-  Thin_Button.textContent = "Thyn";
+  Thin_Button.textContent = "Thin";
   app.append(Thin_Button);
   Thin_Button.addEventListener("click", () => ChangeThickness(pen, thin_pen_size));
 

@@ -26,7 +26,7 @@ class Line implements canvasElement {
   private points: Point[] = [];
   private thickness: number = 1;
   private color: string = "black";
-  constructor(initialX: number, initialY: number,) {
+  constructor(initialX: number, initialY: number) {
     this.points.push({ x: initialX, y: initialY });
   }
 
@@ -92,7 +92,7 @@ class Reticle implements canvasElement {
     if (current_mode == "line") {
       context.beginPath();
       context.arc(this.mouseX, this.mouseY, this.thickness, 0, Math.PI * 2);
-      context.strokeStyle = current_color;//"rgba(0, 0, 0, 0.5)";
+      context.strokeStyle = current_color; //"rgba(0, 0, 0, 0.5)";
       context.stroke();
     } else {
       context.font = "35px serif";
@@ -283,13 +283,17 @@ let y: number = 0;
 let numLines: number = 0;
 let current_thickness: number = 1;
 let current_mode: string = "line";
-let current_color: string = 'black';
+let current_color: string = "black";
 const pointLog: Line[] = [];
 const undoLog: Line[] = [];
 const stickerLog: Sticker[] = [];
 const undostickerLog: Sticker[] = [];
 const buttonLog: HTMLButtonElement[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
+let Random_Button: HTMLButtonElement;
+// Initialize Random_Button
+Random_Button = document.createElement("button");
+
 const tool_movedEvent = new CustomEvent("toolMoved", {});
 const appReticle: Reticle = new Reticle();
 const Canvas_SizeX: number = 256;
@@ -298,7 +302,7 @@ const thick_pen_size: number = 4;
 const thin_pen_size: number = 2;
 //----------------------------------------------------------------------
 
-addLine(pointLog, -1, -1, current_thickness,current_color);
+addLine(pointLog, -1, -1, current_thickness, current_color);
 
 const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
@@ -310,217 +314,160 @@ if (!canvas) {
   clearCanvas(pen);
 
   //Mouse Down
-  canvas.addEventListener("mousedown", (e) => {
-    x = e.offsetX;
-    y = e.offsetY;
-    isDrawing = true;
-    if (current_mode == "line") {
-      addLine(pointLog, x, y, current_thickness,current_color);
-      numLines++;
-    } else {
-      addSticker(stickerLog, x, y, current_mode);
-
-      canvas.dispatchEvent(drawEvent);
-    }
-  });
+  canvas.addEventListener("mousedown", (e) => handleMouseDown(e, pen));
   //Move Mouse
-  canvas.addEventListener("mousemove", (e) => {
-    if (e.offsetX >= 0 && e.offsetX <= Canvas_SizeX) {
-      if (isDrawing) {
-        if (current_mode == "line") {
-          x = e.offsetX;
-          y = e.offsetY;
-          if (!pointLog.length) {
-            addLine(pointLog, x, y, current_thickness,current_color);
-          }
-          pointLog[numLines].addPoint(x, y);
-          canvas.dispatchEvent(drawEvent);
-        } else {
-          x = e.offsetX;
-          y = e.offsetY;
-          const last_sticker = stickerLog[stickerLog.length - 1];
-          if (last_sticker) {
-            const stickercenterCommand = new CenterStickerCommand(
-              last_sticker,
-              x,
-              y
-            );
-            stickercenterCommand.execute();
-            canvas.dispatchEvent(drawEvent);
-          } else {
-            console.log("ERR Drag Sticker: Can't Drag Sticker");
-          }
-        }
-      } else {
-        x = e.offsetX;
-        y = e.offsetY;
-        canvas.dispatchEvent(tool_movedEvent);
-      }
-    } else {
-      canvas.dispatchEvent(drawEvent);
-    }
-  });
+  canvas.addEventListener("mousemove", (e) => handleMouseMove(e, pen));
   //Draw Event Listener
-  canvas.addEventListener("canvasDrawn", () => {
-    clearCanvas(pen);
-    if (stickerLog.length > 0) {
-      for (const sticker of stickerLog) {
-        const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
-        stickerdrawCommand.execute();
-      }
-    }
-    if (pointLog.length > 0) {
-      for (const line of pointLog) {
-        const drawCommand = new DisplayLineCommand(line, pen);
-        drawCommand.execute();
-      }
-    }
-  });
+  canvas.addEventListener("canvasDrawn", () => drawCanvas(pen));
   //Hover Event Listener
-  canvas.addEventListener("toolMoved", () => {
-    clearCanvas(pen);
-    if (stickerLog.length > 0) {
-      for (const sticker of stickerLog) {
-        const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
-        stickerdrawCommand.execute();
-      }
-    }
-    if (pointLog.length > 0) {
-      for (const line of pointLog) {
-        const drawCommand = new DisplayLineCommand(line, pen);
-        drawCommand.execute();
-      }
-    }
-    if (current_mode != "line") {
-      const emojisetCommand = new SetReticleEmojiCommand(
-        appReticle,
-        current_mode
-      );
-      emojisetCommand.execute();
-    }
-    const thicknesstoolCommand = new ChangeReticleThicknessCommand(
-      appReticle,
-      current_thickness
-    );
-    thicknesstoolCommand.execute();
-    const centertoolCommand = new CenterReticleCommand(appReticle, x, y);
-    centertoolCommand.execute();
-    const displaytoolCommand = new DisplayReticleCommand(appReticle, pen);
-    displaytoolCommand.execute();
-  });
+  canvas.addEventListener("toolMoved", () => hoverCanvas(pen));
 
   //Mouse Up
-  document.addEventListener("mouseup", (e) => {
-    if (isDrawing) {
-      x = 0;
-      y = 0;
-      isDrawing = false;
-    }
-  });
+  document.addEventListener("mouseup", handleMouseUp);
 
-  //Create Clear Button
-  const Clear_Button = document.createElement("button");
-  Clear_Button.textContent = "Clear Canvas";
-  app.append(Clear_Button);
-  Clear_Button.addEventListener("click", () => formatCanvas(pen));
-
-  //Create Thick Button
-  const Thick_Button = document.createElement("button");
-  Thick_Button.textContent = "Thick";
-  app.append(Thick_Button);
-  Thick_Button.addEventListener("click", () =>
-    ChangeThickness(thick_pen_size)
-  );
-  //Create Thin Button
-  const Thin_Button = document.createElement("button");
-  Thin_Button.textContent = "Thin";
-  app.append(Thin_Button);
-  Thin_Button.addEventListener("click", () =>
-    ChangeThickness(thin_pen_size)
-  );
-
-  //Create Color Button
-  const Black_Button = document.createElement("button");
-  Black_Button.textContent = "⬛";
-  app.append(Black_Button);
-  Black_Button.addEventListener("click", () =>
-    ChangeColor('black')
-  );
-  //Create Color Button
-  const Red_Button = document.createElement("button");
-  Red_Button.textContent = "🟥";
-  app.append(Red_Button);
-  Red_Button.addEventListener("click", () =>
-    ChangeColor('#FF0000')
-  );
-  //Create Random Color Button
-  const Random_Button = document.createElement("button");
-  Random_Button.textContent = "❔";
-  app.append(Random_Button);
-  Random_Button.addEventListener("click", () =>
-    RandomColor(Random_Button)
-  );
-  //Create Undo Button
-  const Undo_Button = document.createElement("button");
-  Undo_Button.textContent = "Undo";
-  app.append(Undo_Button);
-  Undo_Button.addEventListener("click", () => undoLine());
-
-  //Create Redo Button
-  const Redo_Button = document.createElement("button");
-  Redo_Button.textContent = "Redo";
-  app.append(Redo_Button);
-  Redo_Button.addEventListener("click", () => RedoLine());
-
-  //Create Undo Button
-  const Sticker_Undo_Button = document.createElement("button");
-  Sticker_Undo_Button.textContent = "Peel Off";
-  app.append(Sticker_Undo_Button);
-  Sticker_Undo_Button.addEventListener("click", () => undoSticker());
-
-  //Create Redo Button
-  const Sticker_Redo_Button = document.createElement("button");
-  Sticker_Redo_Button.textContent = "Stick Back";
-  app.append(Sticker_Redo_Button);
-  Sticker_Redo_Button.addEventListener("click", () => RedoSticker());
-
-  //Create Export Button
-  const Export_Button = document.createElement("button");
-  Export_Button.textContent = "Export";
-  app.append(Export_Button);
-  Export_Button.addEventListener("click", () => export_Canvas());
-
-  //Create Custom Button
-  const Custom_Button = document.createElement("button");
-  Custom_Button.textContent = "New Sticker";
-  app.append(Custom_Button);
-  Custom_Button.addEventListener("click", () => ask());
-  //Create Smile Button
+  // Create buttons
+  createButton("Clear Canvas", () => formatCanvas(pen));
+  createButton("Thick", () => ChangeThickness(thick_pen_size));
+  createButton("Thin", () => ChangeThickness(thin_pen_size));
+  createButton("⬛", () => ChangeColor("black"));
+  createButton("🟥", () => ChangeColor("#FF0000"));
+  createButton("❔", () => RandomColor(Random_Button));
+  createButton("Undo", undoLine);
+  createButton("Redo", RedoLine);
+  createButton("Peel Off", undoSticker);
+  createButton("Stick Back", RedoSticker);
+  createButton("Export", export_Canvas);
+  createButton("New Sticker", ask);
   makeButton("🙂");
-
-  //Create Shrimp Button
   makeButton("🦐");
-
-  //Create Tree Button
   makeButton("🌲");
 }
 
-//Make a new sticker
-function makeButton(value: string) {
-  const Custom_Button = document.createElement("button");
-  Custom_Button.textContent = value;
-  app.append(Custom_Button);
-  Custom_Button.addEventListener("click", () => ChangeMode(value));
-  buttonLog.push(Custom_Button);
+function handleMouseDown(e: MouseEvent, _pen: CanvasRenderingContext2D) {
+  x = e.offsetX;
+  y = e.offsetY;
+  isDrawing = true;
+  if (current_mode == "line") {
+    addLine(pointLog, x, y, current_thickness, current_color);
+    numLines++;
+  } else {
+    addSticker(stickerLog, x, y, current_mode);
+    canvas.dispatchEvent(drawEvent);
+  }
 }
-//Create a prompt for new sticker data
+
+function handleMouseMove(e: MouseEvent, _pen: CanvasRenderingContext2D) {
+  if (e.offsetX >= 0 && e.offsetX <= Canvas_SizeX) {
+    if (isDrawing) {
+      if (current_mode == "line") {
+        x = e.offsetX;
+        y = e.offsetY;
+        if (!pointLog.length) {
+          addLine(pointLog, x, y, current_thickness, current_color);
+        }
+        pointLog[numLines].addPoint(x, y);
+        canvas.dispatchEvent(drawEvent);
+      } else {
+        x = e.offsetX;
+        y = e.offsetY;
+        const last_sticker = stickerLog[stickerLog.length - 1];
+        if (last_sticker) {
+          const stickercenterCommand = new CenterStickerCommand(
+            last_sticker,
+            x,
+            y
+          );
+          stickercenterCommand.execute();
+          canvas.dispatchEvent(drawEvent);
+        } else {
+          console.log("ERR Drag Sticker: Can't Drag Sticker");
+        }
+      }
+    } else {
+      x = e.offsetX;
+      y = e.offsetY;
+      canvas.dispatchEvent(tool_movedEvent);
+    }
+  } else {
+    canvas.dispatchEvent(drawEvent);
+  }
+}
+
+function handleMouseUp() {
+  if (isDrawing) {
+    x = 0;
+    y = 0;
+    isDrawing = false;
+  }
+}
+
+function drawCanvas(pen: CanvasRenderingContext2D) {
+  clearCanvas(pen);
+  if (stickerLog.length > 0) {
+    for (const sticker of stickerLog) {
+      const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
+      stickerdrawCommand.execute();
+    }
+  }
+  if (pointLog.length > 0) {
+    for (const line of pointLog) {
+      const drawCommand = new DisplayLineCommand(line, pen);
+      drawCommand.execute();
+    }
+  }
+}
+
+function hoverCanvas(pen: CanvasRenderingContext2D) {
+  clearCanvas(pen);
+  if (stickerLog.length > 0) {
+    for (const sticker of stickerLog) {
+      const stickerdrawCommand = new DisplayStickerCommand(sticker, pen);
+      stickerdrawCommand.execute();
+    }
+  }
+  if (pointLog.length > 0) {
+    for (const line of pointLog) {
+      const drawCommand = new DisplayLineCommand(line, pen);
+      drawCommand.execute();
+    }
+  }
+  if (current_mode != "line") {
+    const emojisetCommand = new SetReticleEmojiCommand(
+      appReticle,
+      current_mode
+    );
+    emojisetCommand.execute();
+  }
+  const thicknesstoolCommand = new ChangeReticleThicknessCommand(
+    appReticle,
+    current_thickness
+  );
+  thicknesstoolCommand.execute();
+  const centertoolCommand = new CenterReticleCommand(appReticle, x, y);
+  centertoolCommand.execute();
+  const displaytoolCommand = new DisplayReticleCommand(appReticle, pen);
+  displaytoolCommand.execute();
+}
+
+function createButton(text: string, onClick: () => void) {
+  const button = document.createElement("button");
+  button.textContent = text;
+  app.append(button);
+  button.addEventListener("click", onClick);
+  buttonLog.push(button);
+}
+
+function makeButton(value: string) {
+  createButton(value, () => ChangeMode(value));
+}
+
 function ask() {
   const text = prompt("Paste in Sticker or Text", "🐌");
   if (text) {
     makeButton(text);
   }
 }
-//Export the canvas
+
 function export_Canvas() {
   const newCanvas = document.createElement("canvas");
   newCanvas.width = 1024;
@@ -550,7 +497,7 @@ function export_Canvas() {
     anchor.click();
   }
 }
-//Draw line
+
 function drawLine(
   context: CanvasRenderingContext2D,
   x1: number,
@@ -558,7 +505,7 @@ function drawLine(
   x2: number,
   y2: number,
   width: number,
-  color:string
+  color: string
 ) {
   context.beginPath();
   context.strokeStyle = color;
@@ -568,22 +515,22 @@ function drawLine(
   context.stroke();
   context.closePath();
 }
-//Clear the canvas
+
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
 }
-//Clear the canvas, and remove all data
+
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
   undoLog.length = 0;
   stickerLog.length = 0;
-  addLine(pointLog, x, y, current_thickness,current_color);
+  addLine(pointLog, x, y, current_thickness, current_color);
   numLines = 0;
   x = 0;
   y = 0;
 }
-//undo a line
+
 function undoLine() {
   if (canvas) {
     if (pointLog.length > 0) {
@@ -604,7 +551,7 @@ function undoLine() {
     }
   }
 }
-//redo a line
+
 function RedoLine() {
   if (canvas) {
     const removed_line = undoLog.pop();
@@ -622,7 +569,7 @@ function RedoLine() {
     }
   }
 }
-//undo a sticker
+
 function undoSticker() {
   if (canvas) {
     if (stickerLog.length > 0) {
@@ -639,7 +586,7 @@ function undoSticker() {
     }
   }
 }
-//redo a sticker
+
 function RedoSticker() {
   if (canvas) {
     const removed_sticker = undostickerLog.pop();
@@ -652,8 +599,14 @@ function RedoSticker() {
     }
   }
 }
-// add a line to the log of lines
-function addLine(log: Line[], x: number, y: number, thickness: number, color: string) {
+
+function addLine(
+  log: Line[],
+  x: number,
+  y: number,
+  thickness: number,
+  color: string
+) {
   const line1 = new Line(x, y);
   const thicknessCommand = new ChangeLineThicknessCommand(line1, thickness);
   thicknessCommand.execute();
@@ -661,55 +614,50 @@ function addLine(log: Line[], x: number, y: number, thickness: number, color: st
   colorCommand.execute();
   log.push(line1);
 }
-//add a sticker to the log of stickers
+
 function addSticker(log: Sticker[], x: number, y: number, emoji: string) {
   const sticker1 = new Sticker(emoji, x, y);
   log.push(sticker1);
 }
-//change thickness of a line
+
 function ChangeThickness(thickness: number) {
   current_mode = "line";
   current_thickness = thickness;
 }
-//change whether we are in sticker or line mode
-function ChangeMode( mode: string) {
+
+function ChangeMode(mode: string) {
   current_mode = mode;
 }
-//change whether we are in sticker or line mode
+
 function ChangeColor(color: string) {
   current_color = color;
 }
-function RandomColor(button:HTMLButtonElement) {
-  const random:number = getRandomInt(6);
-  let color:string = 'black';
-  if(random == 0){
-    color = 'red';
+
+function RandomColor(button: HTMLButtonElement) {
+  const random: number = getRandomInt(6);
+  let color: string = "black";
+  if (random == 0) {
+    color = "red";
     button.textContent = "🟥";
-  }
-  else if(random == 1){
-    color = 'orange';
-    button.textContent = "🟧"
-  }
-  else if(random == 2){
-    color = 'yellow';
-    button.textContent = "🟨"
-  }
-  else if(random == 3){
-    color = 'green';
-    button.textContent = "🟩"
-  }
-  else if(random == 4){
-    color = 'blue';
-    button.textContent = "🟦"
-  }
-  else if (random == 5){
-    color = 'purple';
-    button.textContent = "🟪"
+  } else if (random == 1) {
+    color = "orange";
+    button.textContent = "🟧";
+  } else if (random == 2) {
+    color = "yellow";
+    button.textContent = "🟨";
+  } else if (random == 3) {
+    color = "green";
+    button.textContent = "🟩";
+  } else if (random == 4) {
+    color = "blue";
+    button.textContent = "🟦";
+  } else if (random == 5) {
+    color = "purple";
+    button.textContent = "🟪";
   }
   ChangeColor(color);
 }
-function getRandomInt(max:number) {
+
+function getRandomInt(max: number) {
   return Math.floor(Math.random() * max);
 }
-
-

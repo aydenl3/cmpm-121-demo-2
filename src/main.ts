@@ -1,16 +1,19 @@
 import "./style.css";
 
-const APP_NAME = "Welcome";
+const APP_NAME = "Gjibrish";
 const app = document.querySelector<HTMLDivElement>("#app")!;
-document.title = APP_NAME;
-app.innerHTML = APP_NAME;
 
 //Creates Game Title Text
-const gameName = "Gjibrish";
-document.title = gameName;
+document.title = APP_NAME;
 const header = document.createElement("h1");
-header.innerHTML = gameName;
+header.innerHTML = APP_NAME;
 app.append(header);
+
+const canvas = document.getElementById("canvas") as HTMLElement | null;
+app.append(canvas!);
+
+// Retrieve button container div element
+const buttonContainer = document.getElementById("buttons") as HTMLElement | null;
 
 //Creates Point Interface
 interface Point {
@@ -300,7 +303,6 @@ const thin_pen_size: number = 2;
 
 addLine(pointLog, -1, -1, current_thickness,current_color);
 
-const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
   console.log("ERR Make Canvas: No Canvas Element Found");
 } else {
@@ -421,20 +423,20 @@ if (!canvas) {
   //Create Clear Button
   const Clear_Button = document.createElement("button");
   Clear_Button.textContent = "Clear Canvas";
-  app.append(Clear_Button);
+  buttonContainer!.append(Clear_Button);
   Clear_Button.addEventListener("click", () => formatCanvas(pen));
 
   //Create Thick Button
   const Thick_Button = document.createElement("button");
   Thick_Button.textContent = "Thick";
-  app.append(Thick_Button);
+  buttonContainer!.append(Thick_Button);
   Thick_Button.addEventListener("click", () =>
     ChangeThickness(thick_pen_size)
   );
   //Create Thin Button
   const Thin_Button = document.createElement("button");
   Thin_Button.textContent = "Thin";
-  app.append(Thin_Button);
+  buttonContainer!.append(Thin_Button);
   Thin_Button.addEventListener("click", () =>
     ChangeThickness(thin_pen_size)
   );
@@ -442,58 +444,58 @@ if (!canvas) {
   //Create Color Button
   const Black_Button = document.createElement("button");
   Black_Button.textContent = "⬛";
-  app.append(Black_Button);
+  buttonContainer!.append(Black_Button);
   Black_Button.addEventListener("click", () =>
     ChangeColor('black')
   );
   //Create Color Button
   const Red_Button = document.createElement("button");
   Red_Button.textContent = "🟥";
-  app.append(Red_Button);
+  buttonContainer!.append(Red_Button);
   Red_Button.addEventListener("click", () =>
     ChangeColor('#FF0000')
   );
   //Create Random Color Button
   const Random_Button = document.createElement("button");
   Random_Button.textContent = "❔";
-  app.append(Random_Button);
+  buttonContainer!.append(Random_Button);
   Random_Button.addEventListener("click", () =>
     RandomColor(Random_Button)
   );
   //Create Undo Button
   const Undo_Button = document.createElement("button");
   Undo_Button.textContent = "Undo";
-  app.append(Undo_Button);
+  buttonContainer!.append(Undo_Button);
   Undo_Button.addEventListener("click", () => undoLine());
 
   //Create Redo Button
   const Redo_Button = document.createElement("button");
   Redo_Button.textContent = "Redo";
-  app.append(Redo_Button);
+  buttonContainer!.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine());
 
   //Create Undo Button
   const Sticker_Undo_Button = document.createElement("button");
   Sticker_Undo_Button.textContent = "Peel Off";
-  app.append(Sticker_Undo_Button);
+  buttonContainer!.append(Sticker_Undo_Button);
   Sticker_Undo_Button.addEventListener("click", () => undoSticker());
 
   //Create Redo Button
   const Sticker_Redo_Button = document.createElement("button");
   Sticker_Redo_Button.textContent = "Stick Back";
-  app.append(Sticker_Redo_Button);
+  buttonContainer!.append(Sticker_Redo_Button);
   Sticker_Redo_Button.addEventListener("click", () => RedoSticker());
 
   //Create Export Button
   const Export_Button = document.createElement("button");
   Export_Button.textContent = "Export";
-  app.append(Export_Button);
+  buttonContainer!.append(Export_Button);
   Export_Button.addEventListener("click", () => export_Canvas());
 
   //Create Custom Button
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = "New Sticker";
-  app.append(Custom_Button);
+  buttonContainer!.append(Custom_Button);
   Custom_Button.addEventListener("click", () => ask());
   //Create Smile Button
   makeButton("🙂");
@@ -509,7 +511,7 @@ if (!canvas) {
 function makeButton(value: string) {
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = value;
-  app.append(Custom_Button);
+  buttonContainer!.append(Custom_Button);
   Custom_Button.addEventListener("click", () => ChangeMode(value));
   buttonLog.push(Custom_Button);
 }

@@ -1,19 +1,16 @@
 import "./style.css";
 
-const APP_NAME = "Gjibrish";
+const APP_NAME = "Welcome";
 const app = document.querySelector<HTMLDivElement>("#app")!;
+document.title = APP_NAME;
+app.innerHTML = APP_NAME;
 
 //Creates Game Title Text
-document.title = APP_NAME;
+const gameName = "Gjibrish";
+document.title = gameName;
 const header = document.createElement("h1");
-header.innerHTML = APP_NAME;
+header.innerHTML = gameName;
 app.append(header);
-
-const canvas = document.getElementById("canvas") as HTMLElement | null;
-app.append(canvas!);
-
-// Retrieve button container div element
-const buttonContainer = document.getElementById("buttons") as HTMLElement | null;
 
 //Creates Point Interface
 interface Point {
@@ -29,7 +26,7 @@ class Line implements canvasElement {
   private points: Point[] = [];
   private thickness: number = 1;
   private color: string = "black";
-  constructor(initialX: number, initialY: number) {
+  constructor(initialX: number, initialY: number,) {
     this.points.push({ x: initialX, y: initialY });
   }
 
@@ -95,7 +92,7 @@ class Reticle implements canvasElement {
     if (current_mode == "line") {
       context.beginPath();
       context.arc(this.mouseX, this.mouseY, this.thickness, 0, Math.PI * 2);
-      context.strokeStyle = current_color; //"rgba(0, 0, 0, 0.5)";
+      context.strokeStyle = current_color;//"rgba(0, 0, 0, 0.5)";
       context.stroke();
     } else {
       context.font = "35px serif";
@@ -286,17 +283,13 @@ let y: number = 0;
 let numLines: number = 0;
 let current_thickness: number = 1;
 let current_mode: string = "line";
-let current_color: string = "black";
+let current_color: string = 'black';
 const pointLog: Line[] = [];
 const undoLog: Line[] = [];
 const stickerLog: Sticker[] = [];
 const undostickerLog: Sticker[] = [];
 const buttonLog: HTMLButtonElement[] = [];
 const drawEvent = new CustomEvent("canvasDrawn", {});
-let Random_Button: HTMLButtonElement;
-// Initialize Random_Button
-Random_Button = document.createElement("button");
-
 const tool_movedEvent = new CustomEvent("toolMoved", {});
 const appReticle: Reticle = new Reticle();
 const Canvas_SizeX: number = 256;
@@ -305,8 +298,9 @@ const thick_pen_size: number = 4;
 const thin_pen_size: number = 2;
 //----------------------------------------------------------------------
 
-addLine(pointLog, -1, -1, current_thickness, current_color);
+addLine(pointLog, -1, -1, current_thickness,current_color);
 
+const canvas = document.getElementById("canvas") as HTMLElement | null;
 if (!canvas) {
   console.log("ERR Make Canvas: No Canvas Element Found");
 } else {
@@ -427,20 +421,20 @@ if (!canvas) {
   //Create Clear Button
   const Clear_Button = document.createElement("button");
   Clear_Button.textContent = "Clear Canvas";
-  buttonContainer!.append(Clear_Button);
+  app.append(Clear_Button);
   Clear_Button.addEventListener("click", () => formatCanvas(pen));
 
   //Create Thick Button
   const Thick_Button = document.createElement("button");
   Thick_Button.textContent = "Thick";
-  buttonContainer!.append(Thick_Button);
+  app.append(Thick_Button);
   Thick_Button.addEventListener("click", () =>
     ChangeThickness(thick_pen_size)
   );
   //Create Thin Button
   const Thin_Button = document.createElement("button");
   Thin_Button.textContent = "Thin";
-  buttonContainer!.append(Thin_Button);
+  app.append(Thin_Button);
   Thin_Button.addEventListener("click", () =>
     ChangeThickness(thin_pen_size)
   );
@@ -448,58 +442,58 @@ if (!canvas) {
   //Create Color Button
   const Black_Button = document.createElement("button");
   Black_Button.textContent = "⬛";
-  buttonContainer!.append(Black_Button);
+  app.append(Black_Button);
   Black_Button.addEventListener("click", () =>
     ChangeColor('black')
   );
   //Create Color Button
   const Red_Button = document.createElement("button");
   Red_Button.textContent = "🟥";
-  buttonContainer!.append(Red_Button);
-  buttonContainer!.addEventListener("click", () =>
+  app.append(Red_Button);
+  Red_Button.addEventListener("click", () =>
     ChangeColor('#FF0000')
   );
   //Create Random Color Button
   const Random_Button = document.createElement("button");
   Random_Button.textContent = "❔";
-  buttonContainer!.append(Random_Button);
+  app.append(Random_Button);
   Random_Button.addEventListener("click", () =>
     RandomColor(Random_Button)
   );
   //Create Undo Button
   const Undo_Button = document.createElement("button");
   Undo_Button.textContent = "Undo";
-  buttonContainer!.append(Undo_Button);
+  app.append(Undo_Button);
   Undo_Button.addEventListener("click", () => undoLine());
 
   //Create Redo Button
   const Redo_Button = document.createElement("button");
   Redo_Button.textContent = "Redo";
-  buttonContainer!.append(Redo_Button);
+  app.append(Redo_Button);
   Redo_Button.addEventListener("click", () => RedoLine());
 
   //Create Undo Button
   const Sticker_Undo_Button = document.createElement("button");
   Sticker_Undo_Button.textContent = "Peel Off";
-  buttonContainer!.append(Sticker_Undo_Button);
+  app.append(Sticker_Undo_Button);
   Sticker_Undo_Button.addEventListener("click", () => undoSticker());
 
   //Create Redo Button
   const Sticker_Redo_Button = document.createElement("button");
   Sticker_Redo_Button.textContent = "Stick Back";
-  buttonContainer!.append(Sticker_Redo_Button);
+  app.append(Sticker_Redo_Button);
   Sticker_Redo_Button.addEventListener("click", () => RedoSticker());
 
   //Create Export Button
   const Export_Button = document.createElement("button");
   Export_Button.textContent = "Export";
-  buttonContainer!.append(Export_Button);
+  app.append(Export_Button);
   Export_Button.addEventListener("click", () => export_Canvas());
 
   //Create Custom Button
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = "New Sticker";
-  buttonContainer!.append(Custom_Button);
+  app.append(Custom_Button);
   Custom_Button.addEventListener("click", () => ask());
   //Create Smile Button
   makeButton("🙂");
@@ -511,10 +505,11 @@ if (!canvas) {
   makeButton("🌲");
 }
 
+//Make a new sticker
 function makeButton(value: string) {
   const Custom_Button = document.createElement("button");
   Custom_Button.textContent = value;
-  buttonContainer?.append(Custom_Button);
+  app.append(Custom_Button);
   Custom_Button.addEventListener("click", () => ChangeMode(value));
   buttonLog.push(Custom_Button);
 }
@@ -525,7 +520,7 @@ function ask() {
     makeButton(text);
   }
 }
-
+//Export the canvas
 function export_Canvas() {
   const newCanvas = document.createElement("canvas");
   newCanvas.width = 1024;
@@ -555,7 +550,7 @@ function export_Canvas() {
     anchor.click();
   }
 }
-
+//Draw line
 function drawLine(
   context: CanvasRenderingContext2D,
   x1: number,
@@ -563,7 +558,7 @@ function drawLine(
   x2: number,
   y2: number,
   width: number,
-  color: string
+  color:string
 ) {
   context.beginPath();
   context.strokeStyle = color;
@@ -573,22 +568,22 @@ function drawLine(
   context.stroke();
   context.closePath();
 }
-
+//Clear the canvas
 function clearCanvas(context: CanvasRenderingContext2D) {
   context.clearRect(0, 0, Canvas_SizeX, Canvas_SizeY);
 }
-
+//Clear the canvas, and remove all data
 function formatCanvas(context: CanvasRenderingContext2D) {
   clearCanvas(context);
   pointLog.length = 0;
   undoLog.length = 0;
   stickerLog.length = 0;
-  addLine(pointLog, x, y, current_thickness, current_color);
+  addLine(pointLog, x, y, current_thickness,current_color);
   numLines = 0;
   x = 0;
   y = 0;
 }
-
+//undo a line
 function undoLine() {
   if (canvas) {
     if (pointLog.length > 0) {
@@ -609,7 +604,7 @@ function undoLine() {
     }
   }
 }
-
+//redo a line
 function RedoLine() {
   if (canvas) {
     const removed_line = undoLog.pop();
@@ -627,7 +622,7 @@ function RedoLine() {
     }
   }
 }
-
+//undo a sticker
 function undoSticker() {
   if (canvas) {
     if (stickerLog.length > 0) {
@@ -644,7 +639,7 @@ function undoSticker() {
     }
   }
 }
-
+//redo a sticker
 function RedoSticker() {
   if (canvas) {
     const removed_sticker = undostickerLog.pop();
@@ -657,14 +652,8 @@ function RedoSticker() {
     }
   }
 }
-
-function addLine(
-  log: Line[],
-  x: number,
-  y: number,
-  thickness: number,
-  color: string
-) {
+// add a line to the log of lines
+function addLine(log: Line[], x: number, y: number, thickness: number, color: string) {
   const line1 = new Line(x, y);
   const thicknessCommand = new ChangeLineThicknessCommand(line1, thickness);
   thicknessCommand.execute();
@@ -672,50 +661,53 @@ function addLine(
   colorCommand.execute();
   log.push(line1);
 }
-
+//add a sticker to the log of stickers
 function addSticker(log: Sticker[], x: number, y: number, emoji: string) {
   const sticker1 = new Sticker(emoji, x, y);
   log.push(sticker1);
 }
-
+//change thickness of a line
 function ChangeThickness(thickness: number) {
   current_mode = "line";
   current_thickness = thickness;
 }
-
-function ChangeMode(mode: string) {
+//change whether we are in sticker or line mode
+function ChangeMode( mode: string) {
   current_mode = mode;
 }
-
+//change whether we are in sticker or line mode
 function ChangeColor(color: string) {
   current_color = color;
 }
-
-function RandomColor(button: HTMLButtonElement) {
-  const random: number = getRandomInt(6);
-  let color: string = "black";
-  if (random == 0) {
-    color = "red";
+function RandomColor(button:HTMLButtonElement) {
+  const random:number = getRandomInt(6);
+  let color:string = 'black';
+  if(random == 0){
+    color = 'red';
     button.textContent = "🟥";
-  } else if (random == 1) {
-    color = "orange";
-    button.textContent = "🟧";
-  } else if (random == 2) {
-    color = "yellow";
-    button.textContent = "🟨";
-  } else if (random == 3) {
-    color = "green";
-    button.textContent = "🟩";
-  } else if (random == 4) {
-    color = "blue";
-    button.textContent = "🟦";
-  } else if (random == 5) {
-    color = "purple";
-    button.textContent = "🟪";
+  }
+  else if(random == 1){
+    color = 'orange';
+    button.textContent = "🟧"
+  }
+  else if(random == 2){
+    color = 'yellow';
+    button.textContent = "🟨"
+  }
+  else if(random == 3){
+    color = 'green';
+    button.textContent = "🟩"
+  }
+  else if(random == 4){
+    color = 'blue';
+    button.textContent = "🟦"
+  }
+  else if (random == 5){
+    color = 'purple';
+    button.textContent = "🟪"
   }
   ChangeColor(color);
 }
-
-function getRandomInt(max: number) {
+function getRandomInt(max:number) {
   return Math.floor(Math.random() * max);
 }
